@@ -29,7 +29,7 @@ export const socials: Social[] = [
 export const currentVibe = 'IJWW'
 
 export const zariLinks = {
-  repo: 'https://github.com/Amir3003/Altouragent',
+  repo: 'https://github.com/Amir3003/AItouragent',
   demo: '#',
 } as const
 
