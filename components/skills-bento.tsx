@@ -52,7 +52,7 @@ export function SkillsBento() {
             <TileHeader icon={Network} label="Tile 01" title="AI & Machine Learning" />
             <p className="text-sm leading-relaxed text-neutral-400">
               Exploring neural networks and data pipelines through undergraduate study and hands-on experiments
-              with Python and PyTorch — from data preparation to model training and evaluation.
+              with Python and PyTorch - from data preparation to model training and evaluation.
             </p>
             <div
               className="flex h-40 items-end gap-1.5 rounded-xl border border-neutral-800 bg-neutral-950/70 p-4 lg:h-auto lg:min-h-40 lg:flex-1"

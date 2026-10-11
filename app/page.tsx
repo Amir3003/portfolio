@@ -1,12 +1,9 @@
-import { About } from '@/components/about'
 import { AmbientBackground } from '@/components/ambient-background'
 import { Contact } from '@/components/contact'
 import { CursorGlow } from '@/components/cursor-glow'
 import { FloatingContact } from '@/components/floating-contact'
-import { Hero } from '@/components/hero'
-import { Projects } from '@/components/projects'
+import { StoryLaptop } from '@/components/laptop/story-laptop'
 import { SiteHeader } from '@/components/site-header'
-import { SkillsBento } from '@/components/skills-bento'
 
 export default function Page() {
   return (
@@ -22,10 +19,7 @@ export default function Page() {
       <SiteHeader />
       <FloatingContact />
       <main id="main">
-        <Hero />
-        <About />
-        <SkillsBento />
-        <Projects />
+        <StoryLaptop />
         <Contact />
       </main>
       <footer className="border-t border-neutral-800 px-4 py-8">

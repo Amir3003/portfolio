@@ -9,14 +9,14 @@ const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans', dis
 const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'Amir Nagiyev — AI & ML Engineer & Systems Architect',
+  title: 'Amir Nagiyev · AI & ML Engineer & Systems Architect',
   description:
-    'Portfolio of Amir Nagiyev, a 17-year-old AI & ML undergraduate in Astana, Kazakhstan. Neural networks, Go systems engineering, FastAPI backends and the Zari Travel MVP.',
+    'Portfolio of Amir Nagiyev, a 17-year-old AI & ML undergraduate in Astana, Kazakhstan. Neural networks, Go systems engineering, FastAPI backends and the Voyage AI engine.',
   generator: 'v0.app',
   keywords: ['Amir Nagiyev', 'AI', 'Machine Learning', 'Go', 'FastAPI', 'Next.js', 'Astana', 'Kazakhstan'],
   authors: [{ name: 'Amir Nagiyev' }],
   openGraph: {
-    title: 'Amir Nagiyev — AI & ML Engineer & Systems Architect',
+    title: 'Amir Nagiyev · AI & ML Engineer & Systems Architect',
     description: 'AI & ML undergraduate based in Astana, Kazakhstan.',
     type: 'website',
   },

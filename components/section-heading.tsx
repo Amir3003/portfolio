@@ -6,7 +6,7 @@ export function SectionHeading({
   description,
 }: {
   id: string
-  index: string
+  index?: string
   eyebrow: string
   title: string
   description?: string
@@ -14,7 +14,8 @@ export function SectionHeading({
   return (
     <div className="mb-10 flex flex-col gap-3">
       <p className="font-mono text-xs uppercase tracking-[0.2em] text-lime-400">
-        <span className="text-neutral-600">{index} /</span> {eyebrow}
+        {index ? <span className="text-neutral-600">{index} / </span> : null}
+        {eyebrow}
       </p>
       <h2 id={id} className="text-balance text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">
         {title}

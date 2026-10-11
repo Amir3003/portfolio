@@ -13,10 +13,9 @@ export function Contact() {
       <div className="mx-auto max-w-3xl">
         <SectionHeading
           id="contact-title"
-          index="04"
           eyebrow="Contact"
           title="Open a session."
-          description="Prefer the command line? Query the node directly — or type socials to reach me on Telegram, GitHub, LinkedIn or Freelance.kz."
+          description="Prefer the command line? Query the node directly - or type socials to reach me on Telegram, GitHub, LinkedIn or Freelance.kz."
         />
         <Terminal />
       </div>

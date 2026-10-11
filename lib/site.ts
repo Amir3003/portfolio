@@ -28,15 +28,14 @@ export const socials: Social[] = [
 
 export const currentVibe = 'IJWW'
 
-export const zariLinks = {
+export const voyageLinks = {
   repo: 'https://github.com/Amir3003/AItouragent',
-  demo: '#',
 } as const
 
 export const navItems = [
-  { label: 'About', href: '#about' },
-  { label: 'Stack', href: '#stack' },
-  { label: 'Projects', href: '#projects' },
+  { label: 'Profile', href: '#about' },
+  { label: 'Architecture', href: '#architecture' },
+  { label: 'Voyage AI', href: '#voyage' },
   { label: 'Contact', href: '#contact' },
 ] as const
 

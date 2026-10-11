@@ -1,21 +1,21 @@
-import { ArrowUpRight, FolderGit2 as Github, MapPin } from 'lucide-react'
+import { FolderGit2 as Github, MapPin } from 'lucide-react'
 import { SectionHeading } from '@/components/section-heading'
 import { SectionVignette } from '@/components/section-vignette'
-import { zariLinks } from '@/lib/site'
+import { voyageLinks } from '@/lib/site'
 
-const specs = ['FastAPI', 'Pydantic v2', 'SQLite WAL', 'async / await', '60+ seeded entities']
+const specs = ['FastAPI', 'Pydantic v2', 'SQLite WAL', 'async / await', '50 Curated Properties']
 
 const metrics = [
   { label: 'p99 latency', value: '< 45ms', tone: 'text-lime-400' },
-  { label: 'Seeded entities', value: '60+', tone: 'text-red-400' },
-  { label: 'Regions', value: 'KZ-wide', tone: 'text-neutral-100' },
-  { label: 'Layout', value: 'Responsive', tone: 'text-neutral-100' },
+  { label: 'Curated hotels', value: '50', tone: 'text-red-400' },
+  { label: 'Destinations', value: '10 Global', tone: 'text-neutral-100' },
+  { label: 'Flights', value: 'GDS Sync', tone: 'text-neutral-100' },
 ]
 
 const sampleResults = [
-  { name: 'Charyn Canyon', region: 'Almaty Region', score: 0.97 },
-  { name: 'Burabay National Park', region: 'Akmola Region', score: 0.94 },
-  { name: 'Baiterek Tower', region: 'Astana', score: 0.91 },
+  { name: 'Rixos Premium Belek', region: 'Turkey · Antalya', score: 0.98 },
+  { name: 'Atlantis The Royal', region: 'UAE · Dubai', score: 0.96 },
+  { name: 'Four Seasons Resort', region: 'Egypt · Sharm El Sheikh', score: 0.94 },
 ]
 
 export function Projects() {
@@ -28,7 +28,7 @@ export function Projects() {
           index="03"
           eyebrow="Projects"
           title="Voyage AI MVP"
-          description="An asynchronous travel recommendation engine for discovering places across Kazakhstan."
+          description="An autonomous travel concierge and asynchronous recommendation engine pairing verified luxury resort packages with direct scheduled flights."
         />
 
         <article className="glass relative overflow-hidden rounded-3xl">
@@ -40,15 +40,15 @@ export function Projects() {
             <div className="flex flex-col gap-6 bg-neutral-950/80 p-6 sm:p-8 lg:col-span-3">
               <div className="flex items-center gap-3">
                 <span className="rounded-md border border-lime-500/30 bg-lime-500/10 px-2 py-0.5 font-mono text-[11px] uppercase tracking-widest text-lime-300">
-                  MVP · Live
+                  MVP · Engine
                 </span>
                 <span className="font-mono text-xs text-neutral-500">v0.3.1</span>
               </div>
               <div>
                 <h3 className="text-2xl font-semibold tracking-tight text-neutral-50">Voyage AI</h3>
                 <p className="mt-3 text-pretty leading-relaxed text-neutral-400">
-                  A fully async FastAPI service that ranks destinations by user preferences. Strict Pydantic v2 models
-                  validate every request, while SQLite in WAL mode allows concurrent reads during writes — keeping tail
+                  A fully async FastAPI service that ranks destinations and 5★ resorts by user preferences. Strict Pydantic v2 models
+                  validate every request, while SQLite in WAL mode allows concurrent reads during writes, keeping tail
                   latency flat under load.
                 </p>
               </div>
@@ -75,7 +75,7 @@ export function Projects() {
 
               <div className="mt-auto flex flex-col gap-3 sm:flex-row">
                 <a
-                  href={zariLinks.repo}
+                  href={voyageLinks.repo}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-full border border-neutral-700 bg-neutral-900 px-5 py-2.5 text-sm font-medium text-neutral-100 transition-colors hover:border-neutral-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400"
@@ -83,22 +83,13 @@ export function Projects() {
                   <Github className="size-4" aria-hidden="true" />
                   GitHub Repository
                 </a>
-                <a
-                  href={zariLinks.demo}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-lime-500 px-5 py-2.5 text-sm font-medium text-neutral-950 transition-colors hover:bg-lime-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400"
-                >
-                  Live Demo
-                  <ArrowUpRight className="size-4" aria-hidden="true" />
-                </a>
               </div>
             </div>
 
             <div className="flex flex-col gap-4 bg-neutral-950/60 p-6 sm:p-8 lg:col-span-2" aria-label="Sample API response">
               <div className="flex items-center justify-between font-mono text-xs">
                 <span className="text-neutral-400">
-                  <span className="text-red-400">GET</span> /v1/recommend?vibe=nature
+                  <span className="text-red-400">GET</span> /v1/recommend?dest=turkey
                 </span>
                 <span className="text-lime-400">200 · 38ms</span>
               </div>

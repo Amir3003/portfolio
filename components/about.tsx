@@ -6,7 +6,7 @@ const cards = [
     icon: BrainCircuit,
     title: 'Academic focus',
     accent: 'text-lime-400',
-    body: 'Undergraduate in Artificial Intelligence & Machine Learning. Studying how models learn — optimization, representation and the architectures behind modern neural networks.',
+    body: 'Undergraduate in Artificial Intelligence & Machine Learning. Studying how models learn: optimization, representation and the architectures behind modern neural networks.',
     tags: ['Deep Learning', 'Optimization', 'Linear Algebra'],
   },
   {
@@ -20,7 +20,7 @@ const cards = [
     icon: MemoryStick,
     title: 'Systems mindset',
     accent: 'text-lime-400',
-    body: 'Obsessed with what happens beneath the abstraction: Go memory mechanics, stack vs. heap allocation, struct field alignment and padding — and how the same rigor applies to network design.',
+    body: 'Obsessed with what happens beneath the abstraction: Go memory mechanics, stack vs. heap allocation, struct field alignment and padding - and how the same rigor applies to network design.',
     tags: ['Stack vs Heap', 'Struct Alignment', 'Escape Analysis'],
   },
 ]

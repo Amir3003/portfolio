@@ -13,7 +13,7 @@ export function SiteHeader() {
         </a>
         <ul className="flex items-center gap-1">
           {navItems.map((item) => (
-            <li key={item.href} className={item.href === '#stack' ? 'hidden sm:block' : undefined}>
+            <li key={item.href} className={item.href === '#architecture' ? 'hidden sm:block' : undefined}>
               <a
                 href={item.href}
                 className="rounded-full px-3 py-1.5 text-sm text-neutral-400 transition-colors hover:bg-neutral-800/60 hover:text-neutral-100"

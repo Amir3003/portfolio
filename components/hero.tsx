@@ -23,7 +23,7 @@ export function Hero() {
           className="max-w-4xl text-balance text-5xl font-semibold leading-[1.02] tracking-tight text-neutral-50 sm:text-6xl md:text-7xl"
         >
           Amir Nagiyev
-          <span className="text-neutral-600"> — </span>
+          <span className="text-neutral-600"> · </span>
           <span className="bg-gradient-to-r from-lime-400 via-lime-300 to-red-400 bg-clip-text text-transparent">
             AI & ML Engineer
           </span>{' '}
@@ -31,7 +31,7 @@ export function Hero() {
         </h1>
 
         <p className="max-w-xl text-pretty text-lg leading-relaxed text-neutral-400">
-          Building neural networks on top of a low-level mindset — from tensor graphs in PyTorch to
+          Building neural networks on top of a low-level mindset - from tensor graphs in PyTorch to
           zero-allocation hot paths in Go.
         </p>
 

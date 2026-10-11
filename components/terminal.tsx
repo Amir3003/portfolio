@@ -143,7 +143,7 @@ const welcome: Entry = {
   command: '',
   output: (
     <div className="text-neutral-400">
-      <p className="text-neutral-200">astana-node v1.0 — connection established.</p>
+      <p className="text-neutral-200">astana-node v1.0 · connection established.</p>
       <p>
         Type <span className="text-red-300">help</span> or click a command below to begin.
       </p>
