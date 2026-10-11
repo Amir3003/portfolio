@@ -1,4 +1,5 @@
 import { BriefcaseBusiness, Camera, Code2, Laptop, Send, type LucideIcon } from 'lucide-react'
+import { getLenis } from '@/lib/lenis'
 
 export type Social = {
   label: string
@@ -9,7 +10,7 @@ export type Social = {
 
 export const socials: Social[] = [
   { label: 'Telegram', handle: '@sfulti', href: 'https://t.me/sfulti', icon: Send },
-  { label: 'GitHub', handle: 'github.com/Amir3003', href: 'https://github.com/Amir3003', icon: Code2 },
+  { label: 'GitHub', handle: 'Amir3003', href: 'https://github.com/Amir3003', icon: Code2 },
   {
     label: 'LinkedIn',
     handle: 'in/amir-nagiev/',
@@ -19,7 +20,7 @@ export const socials: Social[] = [
   { label: 'Instagram', handle: '@ijustwannaw1n', href: 'https://instagram.com/ijustwannaw1n', icon: Camera },
   {
     label: 'Freelance.kz',
-    handle: 'freelance.kz/3oad0w6',
+    handle: 'freelance.kz',
     href: 'https://freelance.kz/profile/3oad0w6',
     icon: Laptop,
   },
@@ -40,7 +41,12 @@ export const navItems = [
 ] as const
 
 export function focusTerminal() {
-  document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  const contact = document.getElementById('contact')
+  const lenis = getLenis()
+  if (contact) {
+    if (lenis) lenis.scrollTo(contact, { offset: 0 })
+    else contact.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
   const input = document.getElementById('terminal-input') as HTMLInputElement | null
   input?.focus({ preventScroll: true })
 }

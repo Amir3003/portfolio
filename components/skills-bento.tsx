@@ -1,5 +1,6 @@
 import { Cpu, Globe, Network, Wrench } from 'lucide-react'
 import { SectionHeading } from '@/components/section-heading'
+import { SectionVignette } from '@/components/section-vignette'
 
 function Chips({ items, tone }: { items: string[]; tone: 'lime' | 'red' | 'neutral' }) {
   const toneClass = {
@@ -32,7 +33,8 @@ function TileHeader({ icon: Icon, label, title }: { icon: typeof Cpu; label: str
 
 export function SkillsBento() {
   return (
-    <section id="stack" aria-labelledby="stack-title" className="scroll-mt-24 px-4 py-24">
+    <section id="stack" aria-labelledby="stack-title" className="relative scroll-mt-24 px-4 py-24">
+      <SectionVignette tone="lime" anchor="left" />
       <div className="mx-auto max-w-5xl">
         <SectionHeading
           id="stack-title"

@@ -1,5 +1,6 @@
 import { ArrowUpRight, FolderGit2 as Github, MapPin } from 'lucide-react'
 import { SectionHeading } from '@/components/section-heading'
+import { SectionVignette } from '@/components/section-vignette'
 import { zariLinks } from '@/lib/site'
 
 const specs = ['FastAPI', 'Pydantic v2', 'SQLite WAL', 'async / await', '60+ seeded entities']
@@ -19,7 +20,8 @@ const sampleResults = [
 
 export function Projects() {
   return (
-    <section id="projects" aria-labelledby="projects-title" className="scroll-mt-24 px-4 py-24">
+    <section id="projects" aria-labelledby="projects-title" className="relative scroll-mt-24 px-4 py-24">
+      <SectionVignette tone="red" anchor="right" />
       <div className="mx-auto max-w-5xl">
         <SectionHeading
           id="projects-title"

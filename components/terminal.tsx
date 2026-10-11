@@ -220,7 +220,8 @@ export function Terminal() {
       <div
         ref={scrollRef}
         onClick={() => inputRef.current?.focus({ preventScroll: true })}
-        className="h-[22rem] cursor-text overflow-y-auto p-4 font-mono text-[13px] leading-relaxed sm:h-[26rem]"
+        data-lenis-prevent
+        className="fade-mask-y h-[22rem] cursor-text overflow-y-auto overscroll-contain p-4 font-mono text-[13px] leading-relaxed sm:h-[26rem]"
       >
         <div role="log" aria-live="polite" aria-label="Terminal output" className="flex flex-col gap-4">
           {entries.map((entry) => (
