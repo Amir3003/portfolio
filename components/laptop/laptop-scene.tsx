@@ -11,6 +11,7 @@ import {
   MeshStandardMaterial,
   PlaneGeometry,
   SRGBColorSpace,
+  Vector3,
   type Group,
 } from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
@@ -19,6 +20,38 @@ import {
   createDefaultScreenTexture,
   createKeyboardDeckTexture,
 } from '@/components/laptop/laptop-textures'
+
+/* -------------------------------------------------------------------------- */
+/*  Public contract with story-laptop.tsx                                      */
+/* -------------------------------------------------------------------------- */
+
+/** Projected display rectangle in CSS px, relative to the canvas top-left. */
+export interface ScreenRect {
+  x: number
+  y: number
+  w: number
+  h: number
+  /** False until the first frame has been projected. */
+  valid: boolean
+}
+
+export interface MutableNumber {
+  current: number
+}
+
+export interface MutableScreenRect {
+  current: ScreenRect
+}
+
+export interface LaptopSceneProps {
+  progress: MotionValue<number>
+  active: boolean
+  onContextLost: () => void
+  /** Distance in CSS px from the viewport bottom to the chassis bottom edge at 0% scroll. */
+  bottomInsetRef: MutableNumber
+  /** Written every frame with the on-screen rectangle of the laptop display. */
+  screenRectRef: MutableScreenRect
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Physical dimensions (scene units)                                         */
@@ -32,6 +65,7 @@ const LT = 0.045 // lid thickness
 
 const SCREEN_W = W - 0.24
 const SCREEN_H = LH - 0.22
+const SCREEN_Z = 0.002 // display plane offset from the lid inner face
 
 /* -------------------------------------------------------------------------- */
 /*  Camera and framing                                                        */
@@ -43,13 +77,13 @@ const TAN_HALF_FOV = Math.tan(MathUtils.degToRad(FOV / 2))
 
 /** Share of the viewport height the laptop silhouette should fill. */
 const TARGET_HEIGHT_SHARE = 0.675
-/** Never let the laptop exceed this share of the viewport width. */
+/** The laptop never exceeds this share of the viewport width. */
 const MAX_WIDTH_SHARE = 0.9
 
 const INTRO_ALPHA = MathUtils.degToRad(18) // slightly ajar at 0% scroll
-const INTRO_TILT = 0.5 // camera looks down onto the deck
+const INTRO_TILT = 0.78 // camera looks down onto the deck: gives a 66-68% silhouette on desktop viewports
 const OPEN_ALPHA = 1.85 // fully open, about 106 degrees
-const OPEN_TILT = OPEN_ALPHA - Math.PI / 2 // makes the screen face the camera exactly
+const OPEN_TILT = OPEN_ALPHA - Math.PI / 2 // makes the display face the camera exactly
 
 /** Vertical extent of the laptop silhouette for a pose (orthographic estimate). */
 function poseExtent(alpha: number, tilt: number): number {
@@ -69,7 +103,7 @@ function fitScale(extent: number, viewH: number, viewW: number): number {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Scroll timeline                                                           */
+/*  Scroll timeline (progress 0 to 1 over the sticky section)                 */
 /* -------------------------------------------------------------------------- */
 
 const TAU = Math.PI * 2
@@ -85,9 +119,9 @@ interface Pose {
   shift: number
   /** Scale multiplier relative to the fitted open-laptop scale. */
   zoom: number
-  /** 1 = bottom edge pinned above the scroll cue, 0 = free centring. */
+  /** 1 = chassis bottom pinned above the scroll cue, 0 = free centring. */
   anchor: number
-  /** Screen emissive glow, 0 to 1. */
+  /** Display glow, 0 to 1. */
   glow: number
 }
 
@@ -96,12 +130,22 @@ interface Key extends Pose {
 }
 
 /**
- * Keyframes. Rotation notes:
- * - rotY = PI shows the outer lid with the lid upright. The back cover plane is
- *   rotated by PI around Y (not X), so its text stays right-side up when the
- *   whole laptop turns around.
- * - rotX = PI + tilt shows the bottom chassis, rotY returns to TAU (identity), so
- *   the bottom texture also stays right-side up.
+ * Stages (p):
+ *  0.00 - 0.06  intro, slightly ajar, pinned above the scroll cue
+ *  0.06 - 0.18  lid opens upright, laptop turns around to show the outer lid
+ *  0.18 - 0.28  hold: outer lid
+ *  0.28 - 0.38  lid closes, laptop flips to show the bottom chassis
+ *  0.38 - 0.50  hold: bottom chassis
+ *  0.50 - 0.58  flips back upright
+ *  0.58 - 0.72  lid opens, display faces the camera
+ *  0.72 - 0.94  hold open (DOM dashboard expands over the display and back)
+ *  0.94 - 0.99  lid closes
+ *
+ * Orientation notes:
+ *  - rotY = PI shows the outer lid with the lid upright. The back cover plane is
+ *    rotated PI around Y (not X) so its artwork stays right-side up.
+ *  - rotX = PI + tilt shows the bottom chassis; rotY returns to TAU (identity) so
+ *    the bottom artwork is not mirrored.
  */
 const REST: Key = {
   p: 0,
@@ -115,59 +159,47 @@ const REST: Key = {
   glow: 0,
 }
 
+const LID_VIEW: Omit<Key, 'p'> = {
+  alpha: Math.PI / 2,
+  rotX: 0.1,
+  rotY: Math.PI,
+  centerY: 1.15,
+  shift: -0.12,
+  zoom: 1,
+  anchor: 0,
+  glow: 0,
+}
+
+const BOTTOM_VIEW: Omit<Key, 'p'> = {
+  alpha: 0,
+  rotX: Math.PI + 0.95,
+  rotY: TAU,
+  centerY: 0,
+  shift: -0.22,
+  zoom: 1,
+  anchor: 0,
+  glow: 0,
+}
+
+const OPEN_VIEW: Omit<Key, 'p'> = {
+  alpha: OPEN_ALPHA,
+  rotX: TAU + OPEN_TILT,
+  rotY: TAU,
+  centerY: 1.0,
+  shift: 0,
+  zoom: 1.15,
+  anchor: 0,
+  glow: 1,
+}
+
 const KEYS: readonly Key[] = [
   REST,
-  // Hold the intro pose while the scroll cue fades.
-  { ...REST, p: 0.08 },
-  // Stage 1: lid opens upright, laptop turns to show the outer lid.
+  { ...REST, p: 0.06 },
+  { ...LID_VIEW, p: 0.18 },
+  { ...LID_VIEW, p: 0.28 },
+  { ...BOTTOM_VIEW, p: 0.38 },
+  { ...BOTTOM_VIEW, p: 0.5 },
   {
-    p: 0.2,
-    alpha: Math.PI / 2,
-    rotX: 0.1,
-    rotY: Math.PI,
-    centerY: 1.15,
-    shift: -0.12,
-    zoom: 1,
-    anchor: 0,
-    glow: 0,
-  },
-  {
-    p: 0.31,
-    alpha: Math.PI / 2,
-    rotX: 0.1,
-    rotY: Math.PI,
-    centerY: 1.15,
-    shift: -0.12,
-    zoom: 1,
-    anchor: 0,
-    glow: 0,
-  },
-  // Stage 2 and 3: lid closes, laptop flips to show the bottom chassis.
-  {
-    p: 0.42,
-    alpha: 0,
-    rotX: Math.PI + 0.95,
-    rotY: TAU,
-    centerY: 0,
-    shift: -0.22,
-    zoom: 1,
-    anchor: 0,
-    glow: 0,
-  },
-  {
-    p: 0.58,
-    alpha: 0,
-    rotX: Math.PI + 0.95,
-    rotY: TAU,
-    centerY: 0,
-    shift: -0.22,
-    zoom: 1,
-    anchor: 0,
-    glow: 0,
-  },
-  // Flip back to upright while still closed.
-  {
-    p: 0.68,
     alpha: 0,
     rotX: TAU + 0.3,
     rotY: TAU,
@@ -176,23 +208,11 @@ const KEYS: readonly Key[] = [
     zoom: 1.1,
     anchor: 0,
     glow: 0,
+    p: 0.58,
   },
-  // Stage 4: lid opens, screen faces the camera, dashboard becomes interactive.
+  { ...OPEN_VIEW, p: 0.72 },
+  { ...OPEN_VIEW, p: 0.94 },
   {
-    p: 0.8,
-    alpha: OPEN_ALPHA,
-    rotX: TAU + OPEN_TILT,
-    rotY: TAU,
-    centerY: 1.0,
-    shift: 0,
-    zoom: 1.15,
-    anchor: 0,
-    glow: 1,
-  },
-  { p: 0.9, alpha: OPEN_ALPHA, rotX: TAU + OPEN_TILT, rotY: TAU, centerY: 1.0, shift: 0, zoom: 1.15, anchor: 0, glow: 1 },
-  // Stage 5: laptop closes down.
-  {
-    p: 1,
     alpha: 0,
     rotX: TAU + 0.45,
     rotY: TAU,
@@ -201,6 +221,18 @@ const KEYS: readonly Key[] = [
     zoom: 1,
     anchor: 0,
     glow: 0,
+    p: 0.99,
+  },
+  {
+    alpha: 0,
+    rotX: TAU + 0.45,
+    rotY: TAU,
+    centerY: 0.1,
+    shift: 0.04,
+    zoom: 1,
+    anchor: 0,
+    glow: 0,
+    p: 1,
   },
 ]
 
@@ -236,9 +268,8 @@ function samplePose(progress: number): Pose {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Outer lid artwork. Drawn on a canvas with the top of the canvas as the top of
- * the texture, so the text reads correctly on a plane that faces the viewer
- * without any rotation applied to the texture itself.
+ * Outer lid artwork. The canvas top is the texture top, so the text reads
+ * correctly on a plane that faces the viewer with no texture rotation.
  */
 function createLidBrandTexture(anisotropy: number): CanvasTexture {
   const w = 2048
@@ -253,7 +284,6 @@ function createLidBrandTexture(anisotropy: number): CanvasTexture {
   const ctx = canvas.getContext('2d')
   if (!ctx) return texture
 
-  // Brushed dark aluminium base.
   const base = ctx.createLinearGradient(0, 0, w, h)
   base.addColorStop(0, '#0d0f12')
   base.addColorStop(1, '#16191e')
@@ -267,7 +297,6 @@ function createLidBrandTexture(anisotropy: number): CanvasTexture {
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
 
-  // AN emblem.
   const ex = w / 2
   const ey = h * 0.3
   const es = 210
@@ -280,13 +309,14 @@ function createLidBrandTexture(anisotropy: number): CanvasTexture {
   ctx.font = '700 104px ui-monospace, SFMono-Regular, Menlo, monospace'
   ctx.fillText('AN', ex, ey + 6)
 
-  // Name, always on one line: shrink the font until it fits.
+  // Name on a single line: shrink the font until it fits.
   const name = 'Amir Nagiyev'
   let size = 190
-  ctx.font = `600 ${size}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif`
+  const sans = (px: number) => `600 ${px}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif`
+  ctx.font = sans(size)
   while (ctx.measureText(name).width > w * 0.78 && size > 80) {
     size -= 4
-    ctx.font = `600 ${size}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif`
+    ctx.font = sans(size)
   }
   ctx.fillStyle = '#fafafa'
   ctx.fillText(name, w / 2, h * 0.57)
@@ -310,11 +340,42 @@ function createLidBrandTexture(anisotropy: number): CanvasTexture {
 /*  GPU assets                                                                */
 /* -------------------------------------------------------------------------- */
 
-/** GPU assets created once and disposed on unmount. */
-function useLaptopAssets() {
+interface LaptopAssets {
+  textures: {
+    lid: CanvasTexture
+    bottomChassis: CanvasTexture
+    keyboard: CanvasTexture
+    screen: CanvasTexture
+  }
+  materials: {
+    aluminum: MeshStandardMaterial
+    hinge: MeshStandardMaterial
+    rubberFoot: MeshStandardMaterial
+    deck: MeshStandardMaterial
+    bottomPlate: MeshStandardMaterial
+    backCover: MeshStandardMaterial
+    screen: MeshStandardMaterial
+  }
+  geometries: {
+    baseChassis: RoundedBoxGeometry
+    deckPlane: PlaneGeometry
+    bottomPlane: PlaneGeometry
+    lidChassis: RoundedBoxGeometry
+    lidBackPlane: PlaneGeometry
+    screenPlane: PlaneGeometry
+    hingeBar: CylinderGeometry
+    rubberFoot: CylinderGeometry
+  }
+}
+
+/**
+ * GPU assets are owned by this component and disposed on unmount. Three re-uploads a
+ * disposed resource on next use, so React StrictMode's mount/unmount/mount is safe.
+ */
+function useLaptopAssets(): LaptopAssets {
   const gl = useThree((s) => s.gl)
 
-  const assets = useMemo(() => {
+  const assets = useMemo<LaptopAssets>(() => {
     const aniso = gl.capabilities.getMaxAnisotropy()
     const textures = {
       lid: createLidBrandTexture(aniso),
@@ -341,14 +402,13 @@ function useLaptopAssets() {
         roughness: 0.4,
         metalness: 0.6,
       }),
-      // OLED display panel showing Voyage AI graphics with emissive response to pose.glow.
       screen: new MeshStandardMaterial({
         map: textures.screen,
         emissiveMap: textures.screen,
         emissive: '#ffffff',
         emissiveIntensity: 0,
-        roughness: 0.2,
-        metalness: 0.2,
+        roughness: 0.3,
+        metalness: 0.1,
       }),
     }
 
@@ -382,16 +442,6 @@ function useLaptopAssets() {
 /*  Laptop                                                                    */
 /* -------------------------------------------------------------------------- */
 
-interface InsetRef {
-  current: number
-}
-
-interface LaptopMeshProps {
-  progress: MotionValue<number>
-  /** Distance in CSS px from the viewport bottom to where the chassis bottom edge must sit at 0%. */
-  bottomInsetRef: InsetRef
-}
-
 const FOOT_X = W / 2 - 0.25
 const FOOT_Z = D / 2 - 0.25
 const FOOT_POSITIONS: ReadonlyArray<readonly [number, number, number]> = [
@@ -401,12 +451,27 @@ const FOOT_POSITIONS: ReadonlyArray<readonly [number, number, number]> = [
   [FOOT_X, -BH / 2 - 0.007, FOOT_Z],
 ]
 
-function LaptopMesh({ progress, bottomInsetRef }: LaptopMeshProps) {
+/** Display corners in hinge-pivot space (the lid's local frame). */
+const SCREEN_CORNERS: readonly Vector3[] = [
+  new Vector3(-SCREEN_W / 2, LH / 2 - SCREEN_H / 2, SCREEN_Z),
+  new Vector3(SCREEN_W / 2, LH / 2 - SCREEN_H / 2, SCREEN_Z),
+  new Vector3(-SCREEN_W / 2, LH / 2 + SCREEN_H / 2, SCREEN_Z),
+  new Vector3(SCREEN_W / 2, LH / 2 + SCREEN_H / 2, SCREEN_Z),
+]
+
+interface LaptopMeshProps {
+  progress: MotionValue<number>
+  bottomInsetRef: MutableNumber
+  screenRectRef: MutableScreenRect
+}
+
+function LaptopMesh({ progress, bottomInsetRef, screenRectRef }: LaptopMeshProps) {
   const { materials: m, geometries: g } = useLaptopAssets()
   const root = useRef<Group>(null)
   const spin = useRef<Group>(null)
   const hingePivot = useRef<Group>(null)
   const firstFrame = useRef(true)
+  const scratch = useRef(new Vector3())
 
   useFrame((state, delta) => {
     const r = root.current
@@ -421,7 +486,7 @@ function LaptopMesh({ progress, bottomInsetRef }: LaptopMeshProps) {
 
     const pose = samplePose(progress.get())
 
-    // Scale: fitted open scale in later stages, fitted ajar scale while anchored.
+    // Fitted scale: ajar scale while anchored, open scale afterwards.
     const openScale = fitScale(OPEN_EXTENT, viewH, viewW) * pose.zoom
     const introScale = fitScale(INTRO_EXTENT, viewH, viewW)
     const scale = MathUtils.lerp(openScale, introScale, pose.anchor)
@@ -429,8 +494,8 @@ function LaptopMesh({ progress, bottomInsetRef }: LaptopMeshProps) {
     // Free centring for the story stages.
     const yFree = pose.shift * viewH - pose.centerY * scale
 
-    // Anchored Y: solve the pinhole projection so the front bottom edge of the
-    // chassis lands exactly `bottomInsetRef.current` px above the viewport bottom.
+    // Anchored Y: solve the pinhole projection so the front bottom edge of the chassis
+    // lands exactly `bottomInsetRef.current` px above the viewport bottom.
     const sinT = Math.sin(INTRO_TILT)
     const cosT = Math.cos(INTRO_TILT)
     const edgeY = -BH * cosT - (D / 2) * sinT
@@ -446,18 +511,39 @@ function LaptopMesh({ progress, bottomInsetRef }: LaptopMeshProps) {
     const k = firstFrame.current ? 1000 : 10
     firstFrame.current = false
 
-    r.position.x = 0
-    r.position.y = MathUtils.damp(r.position.y, posY + float, k, delta)
-    r.position.z = 0
+    r.position.set(0, MathUtils.damp(r.position.y, posY + float, k, delta), 0)
     r.scale.setScalar(MathUtils.damp(r.scale.x, scale, k, delta))
-
     sp.rotation.x = MathUtils.damp(sp.rotation.x, pose.rotX, k, delta)
     sp.rotation.y = MathUtils.damp(sp.rotation.y, pose.rotY, k, delta)
 
     // Closed: rotation.x = PI / 2 (lid lies on the deck). Upright: 0.
     hp.rotation.x = MathUtils.damp(hp.rotation.x, Math.PI / 2 - pose.alpha, k, delta)
 
-    m.screen.emissiveIntensity = pose.glow * 0.45
+    m.screen.emissiveIntensity = 0.2 + pose.glow * 0.25
+
+    // Publish the projected display rectangle for the DOM hybrid transition.
+    r.updateMatrixWorld(true)
+    state.camera.updateMatrixWorld()
+    let minX = Infinity
+    let minY = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    const v = scratch.current
+    for (const corner of SCREEN_CORNERS) {
+      v.copy(corner).applyMatrix4(hp.matrixWorld).project(state.camera)
+      const px = ((v.x + 1) / 2) * width
+      const py = ((1 - v.y) / 2) * height
+      minX = Math.min(minX, px)
+      maxX = Math.max(maxX, px)
+      minY = Math.min(minY, py)
+      maxY = Math.max(maxY, py)
+    }
+    const rect = screenRectRef.current
+    rect.x = minX
+    rect.y = minY
+    rect.w = maxX - minX
+    rect.h = maxY - minY
+    rect.valid = true
   })
 
   return (
@@ -506,7 +592,7 @@ function LaptopMesh({ progress, bottomInsetRef }: LaptopMeshProps) {
           <mesh geometry={g.lidChassis} material={m.aluminum} position={[0, LH / 2, -LT / 2]} />
 
           {/* Outer back cover (faces -Z in lid space).
-              Rotated PI around Y, not X: a rotation around X flips the texture
+              Rotated PI around Y, not X: a rotation around X flips the artwork
               upside down whenever the lid is upright, which was the inversion bug. */}
           <mesh
             geometry={g.lidBackPlane}
@@ -515,8 +601,9 @@ function LaptopMesh({ progress, bottomInsetRef }: LaptopMeshProps) {
             rotation={[0, Math.PI, 0]}
           />
 
-          {/* Inner display panel (faces +Z) */}
-          <mesh geometry={g.screenPlane} material={m.screen} position={[0, LH / 2, 0.002]} />
+          {/* Inner display (faces +Z). The interactive dashboard is a native DOM layer
+              that starts exactly on this rectangle and expands to full width. */}
+          <mesh geometry={g.screenPlane} material={m.screen} position={[0, LH / 2, SCREEN_Z]} />
         </group>
       </group>
     </group>
@@ -537,18 +624,12 @@ function ContextGuard({ onLost }: { onLost: () => void }) {
   return null
 }
 
-export interface LaptopSceneProps {
-  progress: MotionValue<number>
-  active: boolean
-  onContextLost: () => void
-  bottomInsetRef: InsetRef
-}
-
 export default function LaptopScene({
   progress,
   active,
   onContextLost,
   bottomInsetRef,
+  screenRectRef,
 }: LaptopSceneProps) {
   const [dpr, setDpr] = useState<[number, number]>([1, 1.75])
 
@@ -568,7 +649,11 @@ export default function LaptopScene({
       <directionalLight position={[-4, 3, -4]} intensity={0.9} color="#cbd5e1" />
       <pointLight position={[-3, 1, 2.5]} intensity={16} distance={12} decay={2} color="#2dd4bf" />
       <pointLight position={[3.5, -1, 3]} intensity={14} distance={12} decay={2} color="#ffffff" />
-      <LaptopMesh progress={progress} bottomInsetRef={bottomInsetRef} />
+      <LaptopMesh
+        progress={progress}
+        bottomInsetRef={bottomInsetRef}
+        screenRectRef={screenRectRef}
+      />
     </Canvas>
   )
 }

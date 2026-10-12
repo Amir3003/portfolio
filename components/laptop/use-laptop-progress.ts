@@ -3,7 +3,8 @@
 import { useMotionValue, type MotionValue } from 'framer-motion'
 import { useEffect, type RefObject } from 'react'
 import { subscribeScroll } from '@/lib/lenis'
-import { clamp01 } from '@/components/laptop/laptop-timeline'
+
+const clamp01 = (x: number): number => Math.min(1, Math.max(0, x))
 
 /**
  * 0 -> 1 progress of the tall laptop storytelling section while pinned.

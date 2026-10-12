@@ -272,100 +272,147 @@ export function createKeyboardDeckTexture(maxAnisotropy: number): CanvasTexture 
 }
 
 /**
- * Screen texture for the 3D model displaying Voyage AI's authentic cyan/navy design system
- * before the interactive DOM screen layers over it.
+ * Display texture: the default Voyage AI view (header, concierge chat on the left, top GDS
+ * package on the right), drawn with the same palette and layout as the DOM dashboard that
+ * expands from the laptop display, so the hand-off between the two is seamless.
  */
 export function createDefaultScreenTexture(maxAnisotropy: number): CanvasTexture {
   const [c, ctx] = makeCanvas(1600, 1000)
+  const W = c.width
+  const H = c.height
 
-  // Authentic Voyage AI deep navy background
+  const panel = (x: number, y: number, w: number, h: number, r: number, fill: string, stroke: string) => {
+    ctx.fillStyle = fill
+    ctx.beginPath()
+    ctx.roundRect(x, y, w, h, r)
+    ctx.fill()
+    ctx.strokeStyle = stroke
+    ctx.lineWidth = 2
+    ctx.stroke()
+  }
+  const text = (
+    s: string,
+    x: number,
+    y: number,
+    font: string,
+    color: string,
+    align: CanvasTextAlign = 'left',
+  ) => {
+    ctx.font = font
+    ctx.fillStyle = color
+    ctx.textAlign = align
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText(s, x, y)
+  }
+
+  const BORDER = 'rgba(94, 234, 212, 0.18)'
+  const CARD = 'rgba(17, 28, 48, 0.92)'
+
+  // Window
   ctx.fillStyle = '#070d18'
-  ctx.fillRect(0, 0, c.width, c.height)
+  ctx.fillRect(0, 0, W, H)
 
-  // Subtle navy grid background
-  ctx.strokeStyle = 'rgba(45, 212, 191, 0.05)'
-  ctx.lineWidth = 1
-  for (let x = 0; x < c.width; x += 50) {
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, c.height)
-    ctx.stroke()
-  }
-  for (let y = 0; y < c.height; y += 50) {
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(c.width, y)
-    ctx.stroke()
-  }
-
-  // Top Status Bar in authentic Voyage AI theme
+  // Header bar
   ctx.fillStyle = '#0b1528'
-  ctx.fillRect(0, 0, c.width, 46)
-
-  // Cyan status dot
+  ctx.fillRect(0, 0, W, 74)
+  ctx.strokeStyle = BORDER
+  ctx.beginPath()
+  ctx.moveTo(0, 74)
+  ctx.lineTo(W, 74)
+  ctx.stroke()
   ctx.fillStyle = CYAN
   ctx.beginPath()
-  ctx.arc(36, 23, 5, 0, Math.PI * 2)
+  ctx.arc(44, 37, 8, 0, Math.PI * 2)
   ctx.fill()
+  text('Voyage', 70, 47, `600 28px ${SANS}`, '#ffffff')
+  text('AI', 70 + ctx.measureText('Voyage').width + 2, 47, `700 28px ${SANS}`, CYAN)
+  text('//  Autonomous Travel Concierge', 186, 46, `400 20px ${SANS}`, '#94a3b8')
+  text('LIVE ENGINE · 24/7', W - 190, 44, `500 16px ${MONO}`, '#5eead4', 'right')
+  panel(W - 150, 20, 118, 36, 8, 'rgba(30, 41, 59, 0.8)', 'rgba(100, 116, 139, 0.5)')
+  text('GitHub', W - 91, 45, `500 18px ${SANS}`, '#e2e8f0', 'center')
 
-  ctx.fillStyle = '#f8fafc'
-  ctx.font = `600 16px ${MONO}`
-  ctx.textAlign = 'left'
-  ctx.fillText('VOYAGE AI // AUTONOMOUS TRAVEL CONCIERGE', 54, 29)
-
-  ctx.fillStyle = MUTED
-  ctx.textAlign = 'right'
-  ctx.fillText('ONLINE · DIRECT GDS FLIGHTS · 5★ RESORTS', c.width - 36, 29)
-
-  // Center Window Graphic in authentic glassmorphism style
-  const wx = 100
-  const wy = 86
-  const ww = c.width - 200
-  const wh = c.height - 150
-
-  ctx.fillStyle = 'rgba(15, 23, 42, 0.85)'
+  // Left column: concierge chat
+  const lw = Math.round(W * 0.44)
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.72)'
+  ctx.fillRect(0, 75, lw, H - 75)
+  ctx.strokeStyle = BORDER
   ctx.beginPath()
-  ctx.roundRect(wx, wy, ww, wh, 18)
-  ctx.fill()
-  ctx.strokeStyle = 'rgba(94, 234, 212, 0.22)'
-  ctx.lineWidth = 1.5
+  ctx.moveTo(lw, 75)
+  ctx.lineTo(lw, H)
   ctx.stroke()
 
-  ctx.textAlign = 'left'
-  ctx.fillStyle = '#f8fafc'
-  ctx.font = `700 46px ${SANS}`
-  ctx.fillText('Voyage AI Concierge Engine', wx + 54, wy + 90)
+  text('NATURAL LANGUAGE EXTRACTION', 36, 124, `500 17px ${MONO}`, CYAN)
 
+  panel(36, 146, lw - 72, 150, 16, CARD, BORDER)
   ctx.fillStyle = CYAN
-  ctx.font = `500 20px ${MONO}`
-  ctx.fillText('Bespoke itinerary curation & real-time slot inference', wx + 54, wy + 130)
-
-  // Authentic spec stats in cyan & amber
-  const statBoxY = wy + 185
-  const statBoxW = (ww - 160) / 3
-  const stats = [
-    { label: 'DESTINATIONS', val: '10 Global Hubs', color: CYAN },
-    { label: 'CURATED RESORTS', val: '50 Elite 5★ Suites', color: AMBER },
-    { label: 'COMMISSION MARKUP', val: '0% Transparent Pricing', color: '#34d399' },
+  ctx.beginPath()
+  ctx.arc(66, 182, 7, 0, Math.PI * 2)
+  ctx.fill()
+  text('Voyage AI Assistant', 84, 188, `600 20px ${SANS}`, '#5eead4')
+  const welcome = [
+    'Welcome to Voyage AI! I am your autonomous travel',
+    'concierge. Where would you like to travel, for how many',
+    'nights, and what is your budget and party size?',
   ]
+  welcome.forEach((line, i) => text(line, 58, 226 + i * 28, `400 19px ${SANS}`, '#e2e8f0'))
 
-  stats.forEach((s, idx) => {
-    const bx = wx + 54 + idx * (statBoxW + 26)
-    ctx.fillStyle = 'rgba(17, 28, 48, 0.9)'
-    ctx.beginPath()
-    ctx.roundRect(bx, statBoxY, statBoxW, 115, 12)
-    ctx.fill()
-    ctx.strokeStyle = 'rgba(94, 234, 212, 0.15)'
-    ctx.stroke()
+  // Input
+  panel(36, 320, lw - 72, 60, 14, 'rgba(11, 21, 40, 0.95)', 'rgba(94, 234, 212, 0.26)')
+  text('e.g. Solo luxury escape to Dubai, 5 nights, $2,500...', 58, 358, `400 18px ${SANS}`, '#64748b')
+  panel(lw - 36 - 54, 326, 46, 48, 10, CYAN, CYAN)
 
-    ctx.fillStyle = MUTED
-    ctx.font = `600 13px ${MONO}`
-    ctx.fillText(s.label, bx + 22, statBoxY + 40)
-
-    ctx.fillStyle = s.color
-    ctx.font = `600 20px ${SANS}`
-    ctx.fillText(s.val, bx + 22, statBoxY + 80)
+  text('DEMO QUICK-LAUNCH INTENTS', 36, 428, `500 15px ${MONO}`, '#94a3b8')
+  const chips = [
+    'Solo trip to Dubai from Astana, 5 nights, $2,500',
+    'Family holiday in Antalya from Astana, 7 nights, $2,800',
+    'Phuket vacation from Almaty, 8 nights, $2,200',
+  ]
+  chips.forEach((chip, i) => {
+    const y = 446 + i * 60
+    panel(36, y, lw - 72, 48, 10, 'rgba(17, 28, 48, 0.7)', 'rgba(94, 234, 212, 0.14)')
+    text(chip, 54, y + 31, `400 18px ${SANS}`, '#cbd5e1')
+    text('›', lw - 62, y + 32, `500 24px ${SANS}`, CYAN, 'center')
   })
+
+  // Right column: bespoke selection
+  const rx = lw + 36
+  const rw = W - rx - 36
+  text('BESPOKE SELECTION', rx, 124, `500 16px ${MONO}`, AMBER)
+  text('Top Tailored Packages (3)', rx, 156, `600 24px ${SANS}`, '#ffffff')
+  text('DIRECT FLIGHTS + 5★ SUITES', rx + rw, 156, `400 15px ${MONO}`, 'rgba(45, 212, 191, 0.8)', 'right')
+
+  const cardTop = 182
+  panel(rx, cardTop, rw, 330, 16, CARD, BORDER)
+  text('#01', rx + 24, cardTop + 40, `500 18px ${MONO}`, '#94a3b8')
+  panel(rx + 76, cardTop + 18, 190, 32, 16, 'rgba(251, 191, 36, 0.12)', 'rgba(251, 191, 36, 0.35)')
+  text('TOP RECOMMENDED', rx + 171, cardTop + 40, `500 14px ${MONO}`, AMBER, 'center')
+  panel(rx + rw - 150, cardTop + 16, 126, 36, 8, 'rgba(45, 212, 191, 0.12)', 'rgba(94, 234, 212, 0.28)')
+  text('98% Match', rx + rw - 87, cardTop + 41, `500 17px ${MONO}`, '#5eead4', 'center')
+
+  text('Rixos Premium Belek', rx + 24, cardTop + 98, `600 30px ${SANS}`, '#ffffff')
+  text('Antalya / Belek', rx + rw - 24, cardTop + 96, `400 18px ${MONO}`, '#cbd5e1', 'right')
+  text('★ 4.9', rx + 24, cardTop + 138, `600 19px ${SANS}`, '#fbbf24')
+  text('(1420)   ·   5★ Luxury   ·   AI - All Inclusive', rx + 92, cardTop + 138, `400 18px ${MONO}`, '#cbd5e1')
+
+  panel(rx + 24, cardTop + 160, rw - 48, 50, 10, 'rgba(11, 21, 40, 0.9)', 'rgba(94, 234, 212, 0.14)')
+  text('Turkish Airlines (NQZ → AYT)   ·   4h 50m', rx + 44, cardTop + 192, `400 18px ${MONO}`, '#e2e8f0')
+  text('Airbus A321neo', rx + rw - 44, cardTop + 192, `400 16px ${MONO}`, '#94a3b8', 'right')
+
+  ctx.strokeStyle = 'rgba(94, 234, 212, 0.14)'
+  ctx.beginPath()
+  ctx.moveTo(rx + 24, cardTop + 236)
+  ctx.lineTo(rx + rw - 24, cardTop + 236)
+  ctx.stroke()
+  text('Hotel (7n) 950,000 ₸ + Flight 390,000 ₸', rx + 24, cardTop + 276, `400 16px ${MONO}`, '#94a3b8')
+  text('Couple Escape · 2 Adults', rx + 24, cardTop + 304, `400 16px ${MONO}`, '#cbd5e1')
+  text('1,340,000 ₸', rx + rw - 24, cardTop + 284, `700 28px ${MONO}`, '#5eead4', 'right')
+  text('≈ $2,680 total', rx + rw - 24, cardTop + 310, `400 16px ${MONO}`, '#94a3b8', 'right')
+
+  // Second card, partially visible: the list continues below the fold.
+  panel(rx, cardTop + 350, rw, 330, 16, CARD, BORDER)
+  text('#02', rx + 24, cardTop + 390, `500 18px ${MONO}`, '#94a3b8')
+  text('Atlantis The Royal', rx + 24, cardTop + 448, `600 30px ${SANS}`, '#ffffff')
+  text('Dubai · Palm Jumeirah', rx + rw - 24, cardTop + 446, `400 18px ${MONO}`, '#cbd5e1', 'right')
 
   return toTexture(c, maxAnisotropy)
 }

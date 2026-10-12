@@ -1,18 +1,23 @@
-import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
-import { FilmGrain } from '@/components/film-grain'
+import { IBM_Plex_Mono, Instrument_Sans } from 'next/font/google'
+import { AnalyticsGate, ConsentBanner } from '@/components/legal/consent'
 import { LenisProvider } from '@/components/lenis-provider'
 import './globals.css'
 
-const geistSans = Geist({ subsets: ['latin'], variable: '--font-geist-sans', display: 'swap' })
-const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono', display: 'swap' })
+// Both families are licensed under the SIL Open Font License 1.1 and are self-hosted at build time
+// by next/font, so visitors never make a request to Google.
+const ui = Instrument_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-ui', display: 'swap' })
+const code = IBM_Plex_Mono({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600'],
+  variable: '--font-code',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Amir Nagiyev · AI & ML Engineer & Systems Architect',
   description:
     'Portfolio of Amir Nagiyev, a 17-year-old AI & ML undergraduate in Astana, Kazakhstan. Neural networks, Go systems engineering, FastAPI backends and the Voyage AI engine.',
-  generator: 'v0.app',
   keywords: ['Amir Nagiyev', 'AI', 'Machine Learning', 'Go', 'FastAPI', 'Next.js', 'Astana', 'Kazakhstan'],
   authors: [{ name: 'Amir Nagiyev' }],
   openGraph: {
@@ -43,11 +48,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} bg-neutral-950`}>
+    <html lang="en" className={`${ui.variable} ${code.variable} bg-neutral-950`}>
       <body className="font-sans antialiased">
         <LenisProvider>{children}</LenisProvider>
-        <FilmGrain />
-        {process.env.NODE_ENV === 'production' && <Analytics />}
+        <ConsentBanner />
+        <AnalyticsGate />
       </body>
     </html>
   )

@@ -3,22 +3,57 @@
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, useTransform } from 'framer-motion'
-import { ArrowDown, BookOpen, Cpu, Layers, TerminalSquare } from 'lucide-react'
+import type { ScreenRect } from '@/components/laptop/laptop-scene'
 import { useLaptopProgress } from '@/components/laptop/use-laptop-progress'
 import { VoyageDashboard } from '@/components/laptop/voyage-dashboard'
-import { SocialBadges } from '@/components/social-badges'
-import { TerminalCta } from '@/components/terminal-cta'
 
 // WebGL scene, client only.
+function SceneSkeleton() {
+  return (
+    <div aria-hidden="true" className="absolute inset-0 flex items-end justify-center pb-40">
+      <div className="h-56 w-[min(70vw,34rem)] animate-pulse border border-neutral-800 bg-neutral-900/60" />
+    </div>
+  )
+}
+
 const LaptopScene = dynamic(() => import('@/components/laptop/laptop-scene'), {
   ssr: false,
-  loading: () => null,
+  loading: () => <SceneSkeleton />,
 })
 
-/** One grid cell in CSS px. Change this if your background grid uses another size. */
-const GRID_PX = 32
-/** Required gap between the laptop chassis and the scroll cue at 0% scroll. */
+/* -------------------------------------------------------------------------- */
+/*  Layout constants                                                          */
+/* -------------------------------------------------------------------------- */
+
+/** Cell size of the `bg-grid` utility in globals.css. */
+const GRID_PX = 48
+/** Gap between the chassis bottom and the scroll cue at 0% scroll, in grid cells. */
 const GAP_CELLS = 1.5
+
+/** Expanded dashboard geometry (CSS px). Leaves the header and a scroll band clear. */
+const PANEL_GUTTER = 16
+const PANEL_MAX_WIDTH = 1440
+const PANEL_TOP_CLEAR = 84
+const PANEL_BOTTOM_BAND = 72
+const PANEL_MIN_HEIGHT = 360
+
+/* -------------------------------------------------------------------------- */
+/*  Timeline helpers (progress 0 to 1 over the sticky section)                */
+/* -------------------------------------------------------------------------- */
+
+const clamp01 = (x: number): number => Math.min(1, Math.max(0, x))
+const lerp = (a: number, b: number, t: number): number => a + (b - a) * t
+const smoothstep = (a: number, b: number, x: number): number => {
+  const t = clamp01((x - a) / (b - a))
+  return t * t * (3 - 2 * t)
+}
+
+/** 0 = dashboard sits on the laptop display, 1 = fully expanded. */
+const expandAmount = (p: number): number => smoothstep(0.76, 0.84, p) * (1 - smoothstep(0.9, 0.94, p))
+/** Dashboard layer opacity: it appears as the display "switches on" and leaves as the lid closes. */
+const panelOpacity = (p: number): number => smoothstep(0.745, 0.765, p) * (1 - smoothstep(0.93, 0.95, p))
+
+const eventsFor = (v: number): 'auto' | 'none' => (v > 0.05 ? 'auto' : 'none')
 
 function detectWebGL(): boolean {
   try {
@@ -29,14 +64,80 @@ function detectWebGL(): boolean {
   }
 }
 
-const eventsFor = (v: number): 'auto' | 'none' => (v > 0.05 ? 'auto' : 'none')
+/* -------------------------------------------------------------------------- */
+/*  Component                                                                 */
+/* -------------------------------------------------------------------------- */
+
+interface Column {
+  label: string
+  title: string
+  body: string
+  tags: string
+}
+
+/** Content for the architecture stage, shared by the 3D story and the static fallback. */
+const COLUMNS: readonly Column[] = [
+  {
+    label: 'AI & Machine Learning',
+    title: 'Neural modeling and ranking',
+    body: 'PyTorch tensor pipelines, loss convergence optimization, deep representations, embeddings and destination ranking.',
+    tags: 'PyTorch, vector math, rank loss',
+  },
+  {
+    label: 'Systems Engineering & Stack',
+    title: 'Low-level stack and runtime',
+    body: 'Go pointer mechanics, struct field padding, zero-alloc hot paths, escape analysis and SQLite WAL concurrent transactions.',
+    tags: 'Go runtime, SQLite WAL, zero-alloc',
+  },
+  {
+    label: 'Academic & Languages',
+    title: 'Astana node and linguistics',
+    body: 'Undergraduate in AI & ML based in Astana. Fluent in Russian and English. Japanese JLPT N2 study with Genki and Renshuu.',
+    tags: 'RU native, EN fluent, JA JLPT N2',
+  },
+]
+
+/** Profile copy, shared by the 3D story and the static fallback. */
+const PROFILE = {
+  school: 'QAIRU AI&ML',
+  focus:
+    'Interested in systems engineering, software development and the design of autonomous AI systems.',
+  reading: 'Haruki Murakami, Stephen Hawking, Michio Kaku, basketball and Japanese.',
+} as const
+
+/**
+ * Three columns, one ruled sheet: hairline dividers instead of three floating cards, no icons,
+ * no blur. The columns still read left to right as AI, systems, academic.
+ */
+function SpecSheet({ id }: { id?: string }) {
+  return (
+    <div
+      id={id}
+      className="grid w-full grid-cols-1 divide-y divide-neutral-800 border-y border-neutral-700 bg-neutral-950 text-left md:grid-cols-3 md:divide-x md:divide-y-0"
+    >
+      {COLUMNS.map((c) => (
+        <section key={c.label} className="flex flex-col gap-2 p-4 sm:p-6">
+          <p className="font-mono text-xs text-lime-400">{c.label}</p>
+          <h3 className="text-base font-medium text-neutral-50 sm:text-lg">{c.title}</h3>
+          <p className="text-sm leading-relaxed text-neutral-300 sm:text-[15px]">{c.body}</p>
+          <p className="mt-auto pt-2 font-mono text-xs text-neutral-500">{c.tags}</p>
+        </section>
+      ))}
+    </div>
+  )
+}
 
 export function StoryLaptop() {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const cueRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const hintRef = useRef<HTMLDivElement>(null)
+
   /** Distance from the viewport bottom to the chassis bottom edge at 0% scroll. */
   const bottomInsetRef = useRef<number>(140)
+  /** Written by the WebGL scene every frame: where the laptop display is on screen. */
+  const screenRectRef = useRef<ScreenRect>({ x: 0, y: 0, w: 0, h: 0, valid: false })
 
   const [hasWebGL, setHasWebGL] = useState(true)
   const [reducedMotion, setReducedMotion] = useState(false)
@@ -54,8 +155,9 @@ export function StoryLaptop() {
 
   const handleContextLost = useCallback(() => setHasWebGL(false), [])
 
-  // Keep the chassis exactly 1.5 grid cells above the top edge of the scroll cue.
   const useFallback = reducedMotion || !hasWebGL
+
+  // Keep the chassis exactly 1.5 grid cells above the top edge of the scroll cue.
   useEffect(() => {
     if (useFallback) return
     const measure = () => {
@@ -79,27 +181,109 @@ export function StoryLaptop() {
   // Section scroll progress, 0 to 1.
   const progress = useLaptopProgress(containerRef, !reducedMotion)
 
-  // Initial scroll cue (0% to 12%).
-  const scrollCueOpacity = useTransform(progress, [0, 0.08, 0.12], [1, 0.6, 0])
+  // Hybrid transition: a native DOM dashboard starts exactly on the projected laptop display
+  // and expands to a full-width, fully interactive panel. Everything is written straight to
+  // the element style from one rAF loop, so React never re-renders while scrolling.
+  useEffect(() => {
+    if (useFallback) return
+    const panel = panelRef.current
+    const hint = hintRef.current
+    if (!panel) return
+
+    let raf = 0
+    let wasVisible = false
+
+    const hide = () => {
+      if (!wasVisible) return
+      wasVisible = false
+      panel.style.visibility = 'hidden'
+      panel.style.pointerEvents = 'none'
+      panel.style.opacity = '0'
+      if (hint) hint.style.opacity = '0'
+    }
+
+    const tick = () => {
+      raf = requestAnimationFrame(tick)
+      const viewport = viewportRef.current
+      const rect = screenRectRef.current
+      if (!viewport || !rect.valid) return
+
+      const p = progress.get()
+      const opacity = panelOpacity(p)
+      if (opacity < 0.001) {
+        hide()
+        return
+      }
+      wasVisible = true
+
+      const e = expandAmount(p)
+      const vw = viewport.clientWidth
+      const vh = viewport.clientHeight
+
+      // Final (expanded) box.
+      const fw = Math.min(vw - PANEL_GUTTER * 2, PANEL_MAX_WIDTH)
+      const fh = Math.max(PANEL_MIN_HEIGHT, vh - PANEL_TOP_CLEAR - PANEL_BOTTOM_BAND)
+      const fx = (vw - fw) / 2
+      const fy = PANEL_TOP_CLEAR
+
+      // Uniform scale that covers the laptop display, cropped to the display rectangle.
+      const s0 = Math.max(rect.w / fw, rect.h / fh)
+      const s = lerp(s0, 1, e)
+      const x = lerp(rect.x, fx, e)
+      const y = lerp(rect.y, fy, e)
+      const visW = lerp(rect.w, fw, e)
+      const visH = lerp(rect.h, fh, e)
+
+      panel.style.width = `${fw}px`
+      panel.style.height = `${fh}px`
+      panel.style.visibility = 'visible'
+      panel.style.opacity = String(opacity)
+
+      if (e >= 0.999) {
+        panel.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
+        panel.style.clipPath = 'none'
+      } else {
+        const clipRight = Math.max(0, fw - visW / s)
+        const clipBottom = Math.max(0, fh - visH / s)
+        panel.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${s})`
+        panel.style.clipPath = `inset(0px ${clipRight}px ${clipBottom}px 0px round ${12 / s}px)`
+      }
+
+      // Interactive only when fully expanded: no pointer interception at any other time.
+      panel.style.pointerEvents = e > 0.98 && opacity > 0.98 ? 'auto' : 'none'
+      if (hint) hint.style.opacity = String(e * opacity)
+    }
+
+    raf = requestAnimationFrame(tick)
+    return () => {
+      cancelAnimationFrame(raf)
+      hide()
+    }
+  }, [useFallback, progress])
+
+  // Initial scroll cue.
+  const scrollCueOpacity = useTransform(progress, [0, 0.06, 0.1], [1, 0.6, 0])
 
   // Stage 1: outer lid and profile.
-  const stage1Opacity = useTransform(progress, [0.12, 0.18, 0.28, 0.33], [0, 1, 1, 0])
-  const stage1Y = useTransform(progress, [0.12, 0.18, 0.28, 0.33], [20, 0, 0, -20])
+  const stage1Opacity = useTransform(progress, [0.1, 0.16, 0.26, 0.3], [0, 1, 1, 0])
+  const stage1Y = useTransform(progress, [0.1, 0.16, 0.26, 0.3], [20, 0, 0, -20])
   const stage1Events = useTransform(stage1Opacity, eventsFor)
 
   // Stage 2 and 3: bottom chassis and architecture.
-  const stage2Opacity = useTransform(progress, [0.35, 0.41, 0.52, 0.58], [0, 1, 1, 0])
-  const stage2Y = useTransform(progress, [0.35, 0.41, 0.52, 0.58], [20, 0, 0, -20])
+  const stage2Opacity = useTransform(progress, [0.32, 0.38, 0.48, 0.52], [0, 1, 1, 0])
+  const stage2Y = useTransform(progress, [0.32, 0.38, 0.48, 0.52], [20, 0, 0, -20])
   const stage2Events = useTransform(stage2Opacity, eventsFor)
 
-  // Stage 4: seamless transition into interactive Voyage AI dashboard
-  const stage4Opacity = useTransform(progress, [0.72, 0.78, 0.88, 0.92], [0, 1, 1, 0])
-  const stage4Scale = useTransform(progress, [0.72, 0.78, 0.88, 0.92], [0.96, 1, 1, 0.96])
-  const stage4Events = useTransform(stage4Opacity, (v) => (v > 0.4 ? 'auto' : 'none'))
+  // The 3D scene steps aside while the dashboard is expanded, returns for the closing
+  // sequence, and fades out for the hand-off to the Contact section.
+  const sceneOpacity = useTransform(
+    progress,
+    [0, 0.78, 0.84, 0.9, 0.94, 0.985, 1],
+    [1, 1, 0, 0, 1, 1, 0],
+  )
 
-  // Stage 5: laptop closes, canvas fades, contact label appears.
-  const sceneOpacity = useTransform(progress, [0.93, 0.99], [1, 0])
-  const contactOpacity = useTransform(progress, [0.94, 0.99], [0, 1])
+  // Stage 5: contact label appears as the lid closes.
+  const contactOpacity = useTransform(progress, [0.965, 0.995], [0, 1])
   const contactEvents = useTransform(contactOpacity, eventsFor)
 
   // Static fallback for reduced motion or missing WebGL.
@@ -107,10 +291,7 @@ export function StoryLaptop() {
     return (
       <div className="relative mx-auto flex max-w-6xl flex-col gap-16 px-4 py-24">
         <div id="about" className="flex flex-col items-start gap-6 pt-12">
-          <p className="glass inline-flex items-center gap-2 rounded-full px-3 py-1 font-mono text-xs text-neutral-300">
-            <span className="size-2 rounded-full bg-lime-400" />
-            Astana, Kazakhstan · Undergraduate Student
-          </p>
+          <p className="font-mono text-xs text-neutral-400">Astana, Kazakhstan · Undergraduate student</p>
           <h1 className="text-4xl font-semibold tracking-tight text-neutral-50 sm:text-5xl md:text-6xl">
             17-year-old AI & ML Engineer <span className="whitespace-nowrap">Amir Nagiyev</span>
           </h1>
@@ -118,46 +299,16 @@ export function StoryLaptop() {
             Building neural networks on top of a low-level mindset: from tensor graphs in PyTorch to
             zero-allocation hot paths in Go.
           </p>
-          <div className="flex gap-4">
-            <SocialBadges />
-          </div>
+          <p className="max-w-2xl text-base leading-relaxed text-neutral-300">
+            Studying at {PROFILE.school}. {PROFILE.focus}
+          </p>
+          <p className="max-w-2xl text-sm leading-relaxed text-neutral-400">
+            <span className="font-mono text-neutral-300">Interests: </span>
+            {PROFILE.reading}
+          </p>
         </div>
 
-        <div id="architecture" className="grid gap-6 md:grid-cols-3">
-          <div className="glass rounded-2xl border border-neutral-800 p-6">
-            <div className="flex items-center gap-2 font-mono text-xs font-semibold uppercase text-lime-400">
-              <Cpu className="size-4" />
-              <span>AI & Machine Learning</span>
-            </div>
-            <h3 className="mt-2 text-base font-medium text-neutral-100">Neural Modeling & Ranking</h3>
-            <p className="mt-2 text-sm leading-relaxed text-neutral-400">
-              PyTorch deep learning pipelines, loss convergence optimization, neural embeddings, and
-              destination ranking models.
-            </p>
-          </div>
-          <div className="glass rounded-2xl border border-neutral-800 p-6">
-            <div className="flex items-center gap-2 font-mono text-xs font-semibold uppercase text-red-400">
-              <Layers className="size-4" />
-              <span>Systems Engineering</span>
-            </div>
-            <h3 className="mt-2 text-base font-medium text-neutral-100">Low-Level Stack & Runtime</h3>
-            <p className="mt-2 text-sm leading-relaxed text-neutral-400">
-              Go memory mechanics, struct field padding, zero-alloc hot paths, escape analysis, and
-              SQLite WAL concurrent transactions.
-            </p>
-          </div>
-          <div className="glass rounded-2xl border border-neutral-800 p-6">
-            <div className="flex items-center gap-2 font-mono text-xs font-semibold uppercase text-neutral-300">
-              <BookOpen className="size-4" />
-              <span>Academic & Languages</span>
-            </div>
-            <h3 className="mt-2 text-base font-medium text-neutral-100">Astana Node & Linguistics</h3>
-            <p className="mt-2 text-sm leading-relaxed text-neutral-400">
-              17-year-old undergraduate in Astana. Fluent in Russian and English. Japanese JLPT N2
-              study with Genki & Renshuu.
-            </p>
-          </div>
-        </div>
+        <SpecSheet id="architecture" />
 
         <div id="voyage" className="h-[720px] w-full lg:h-[640px]">
           <VoyageDashboard />
@@ -167,18 +318,15 @@ export function StoryLaptop() {
   }
 
   return (
-    <div ref={containerRef} className="relative h-[480vh]">
-      {/* Anchors, placed where each stage sits in the scroll range */}
+    <div ref={containerRef} className="relative h-[560vh]">
+      {/* Anchors, placed where each stage sits in the scroll range (p * 460 / 560). */}
       <div id="top" className="absolute top-0" />
-      <div id="about" className="absolute top-[14%]" />
-      <div id="architecture" className="absolute top-[34%]" />
-      <div id="voyage" className="absolute top-[72%]" />
+      <div id="about" className="absolute top-[10%]" />
+      <div id="architecture" className="absolute top-[33%]" />
+      <div id="voyage" className="absolute top-[67%]" />
 
-      <div
-        ref={viewportRef}
-        className="sticky top-0 flex h-screen w-full items-center justify-center overflow-hidden"
-      >
-        {/* 3D WebGL scene with realistic physical materials, lighting, and textures */}
+      <div ref={viewportRef} className="sticky top-0 h-screen w-full overflow-hidden">
+        {/* Layer 10: WebGL laptop. Never receives pointer events. */}
         {mounted && (
           <motion.div
             style={{ opacity: sceneOpacity }}
@@ -189,163 +337,83 @@ export function StoryLaptop() {
               active
               onContextLost={handleContextLost}
               bottomInsetRef={bottomInsetRef}
+              screenRectRef={screenRectRef}
             />
           </motion.div>
         )}
 
-        {/* Story overlays. Each is only interactive while it is visible, so none of them
-            can sit invisibly on top of the laptop screen and swallow clicks or scrolls. */}
-        <div className="pointer-events-none relative z-20 mx-auto flex h-full w-full max-w-6xl flex-col items-center justify-between px-4 py-8 sm:px-6 sm:py-10">
+        {/* Layer 20: story overlays. Each one is interactive only while it is visible. */}
+        <div className="pointer-events-none absolute inset-0 z-20 mx-auto flex w-full max-w-6xl flex-col items-center justify-between px-4 py-8 sm:px-6 sm:py-10">
           {/* Initial state: only the scroll cue */}
           <motion.div
             ref={cueRef}
             style={{ opacity: scrollCueOpacity }}
-            className="pointer-events-none absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5 text-neutral-400"
+            className="pointer-events-none absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2"
           >
-            <span className="font-mono text-[10px] uppercase tracking-widest text-neutral-400 sm:text-[11px]">
-              SCROLL TO EXPLORE
-            </span>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="size-1 animate-ping rounded-full bg-lime-400" />
-              <ArrowDown className="size-3.5 animate-bounce text-lime-400 sm:size-4" />
-            </div>
+            <span className="font-mono text-[11px] text-neutral-400">Scroll to explore</span>
+            <span className="h-5 w-px bg-neutral-600" aria-hidden="true" />
           </motion.div>
 
           {/* Stage 1: outer lid and profile */}
           <motion.div
             style={{ opacity: stage1Opacity, y: stage1Y, pointerEvents: stage1Events }}
-            className="absolute inset-x-4 top-8 mx-auto flex max-w-2xl flex-col items-center gap-2.5 text-center sm:top-12 sm:gap-3"
+            className="absolute inset-x-4 top-[17vh] mx-auto flex max-w-3xl flex-col items-center gap-3 text-center sm:top-[19vh]"
           >
-            <span className="rounded border border-lime-400/20 bg-lime-400/10 px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-wider text-lime-400">
-              HARDWARE PROFILE | STAGE 1
-            </span>
-
+            <p className="font-mono text-xs text-lime-400">Profile</p>
             <h1 className="text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl md:text-4xl">
-              17-year-old AI & ML Engineer <span className="whitespace-nowrap">Amir Nagiyev</span>
+              17-year-old AI &amp; ML Engineer <span className="whitespace-nowrap">Amir Nagiyev</span>
             </h1>
-
-            <p className="max-w-lg text-xs leading-relaxed text-neutral-400 sm:text-sm">
-              Astana, Kazakhstan · Neural network architectures, loss optimization, and low-level
-              systems engineering.
+            <p className="max-w-xl text-sm leading-relaxed text-neutral-300">
+              Astana, Kazakhstan · Studying at {PROFILE.school}. {PROFILE.focus}
             </p>
-
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-0.5">
-              <div className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-[11px] text-neutral-300">
-                <span className="size-2 rounded-full bg-lime-400" />
-                <span>Astana Architecture Node</span>
-              </div>
-              <TerminalCta className="glass inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 font-mono text-[11px] text-red-300 transition hover:border-red-400/50 hover:text-red-200">
-                <TerminalSquare className="size-3" />
-                <span>Terminal Session</span>
-              </TerminalCta>
-            </div>
+            <p className="max-w-2xl text-xs leading-relaxed text-neutral-400 sm:text-sm">
+              <span className="font-mono text-neutral-300">Interests: </span>
+              {PROFILE.reading}
+            </p>
           </motion.div>
 
-          {/* Stage 2 and 3: bottom chassis and 3-column architecture */}
+          {/* Stage 2 and 3: bottom chassis and architecture */}
           <motion.div
             style={{ opacity: stage2Opacity, y: stage2Y, pointerEvents: stage2Events }}
-            className="absolute inset-x-4 top-6 mx-auto flex w-full max-w-6xl flex-col items-center gap-3 sm:top-8 md:top-10"
+            className="absolute inset-x-4 top-[17vh] mx-auto flex w-full max-w-6xl flex-col items-center gap-4 sm:top-[19vh]"
           >
-            <span className="rounded border border-red-400/20 bg-red-400/10 px-3 py-0.5 font-mono text-[11px] uppercase tracking-wider text-red-300">
-              STAGE 02 & 03 | SYSTEM ARCHITECTURE & HARDWARE CHASSIS
-            </span>
-
             <h2 className="text-center text-2xl font-semibold tracking-tight text-neutral-100 sm:text-3xl">
-              Physical Rigor & System Architecture
+              Physical rigor, system architecture
             </h2>
-
-            <div className="grid w-full grid-cols-1 gap-3.5 pt-1 text-left md:grid-cols-3">
-              {/* Left: AI & Machine Learning */}
-              <div className="glass flex flex-col justify-between rounded-2xl border border-neutral-800/80 p-4 sm:p-5">
-                <div>
-                  <div className="flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wider text-lime-400 sm:text-[13px]">
-                    <Cpu className="size-4" />
-                    <span>AI & MACHINE LEARNING</span>
-                  </div>
-                  <h3 className="mt-2 text-base font-medium text-neutral-50 sm:text-lg">
-                    Neural Modeling & Ranking
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-200 sm:text-[15px]">
-                    PyTorch tensor pipelines, loss convergence optimization, deep representations,
-                    embeddings, and destination ranking engines.
-                  </p>
-                </div>
-                <div className="mt-3.5 flex flex-wrap gap-1.5 font-mono text-xs text-neutral-300">
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">PyTorch</span>
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">Vector Math</span>
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">Rank Loss</span>
-                </div>
-              </div>
-
-              {/* Center: Systems Engineering & Stack */}
-              <div className="glass flex flex-col justify-between rounded-2xl border border-neutral-800/80 p-4 sm:p-5">
-                <div>
-                  <div className="flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wider text-red-400 sm:text-[13px]">
-                    <Layers className="size-4" />
-                    <span>SYSTEMS ENGINEERING & STACK</span>
-                  </div>
-                  <h3 className="mt-2 text-base font-medium text-neutral-50 sm:text-lg">
-                    Low-Level Stack & Runtime
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-200 sm:text-[15px]">
-                    Go pointer mechanics, struct field padding, zero-alloc hot paths, escape analysis,
-                    and SQLite WAL mode concurrent transactions.
-                  </p>
-                </div>
-                <div className="mt-3.5 flex flex-wrap gap-1.5 font-mono text-xs text-neutral-300">
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">Go Runtime</span>
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">SQLite WAL</span>
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">Zero-Alloc</span>
-                </div>
-              </div>
-
-              {/* Right: Academic focus & Languages */}
-              <div className="glass flex flex-col justify-between rounded-2xl border border-neutral-800/80 p-4 sm:p-5">
-                <div>
-                  <div className="flex items-center gap-2 font-mono text-xs font-semibold uppercase tracking-wider text-neutral-300 sm:text-[13px]">
-                    <BookOpen className="size-4" />
-                    <span>ACADEMIC & LANGUAGES</span>
-                  </div>
-                  <h3 className="mt-2 text-base font-medium text-neutral-50 sm:text-lg">
-                    Astana Node & Linguistics
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-neutral-200 sm:text-[15px]">
-                    17-year-old undergraduate in AI & ML based in Astana. Bilingual fluency in Russian
-                    and English. Japanese JLPT N2 study (Genki & Renshuu).
-                  </p>
-                </div>
-                <div className="mt-3.5 flex flex-wrap gap-1.5 font-mono text-xs text-neutral-300">
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">RU (Native)</span>
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">EN (Fluent)</span>
-                  <span className="rounded border border-neutral-800 bg-neutral-900 px-2 py-0.5">JA (JLPT N2)</span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Stage 4: seamless transition into interactive Voyage AI */}
-          <motion.div
-            style={{
-              opacity: stage4Opacity,
-              scale: stage4Scale,
-              pointerEvents: stage4Events,
-            }}
-            className="absolute inset-x-2 top-4 bottom-4 z-30 mx-auto flex w-full max-w-5xl items-center justify-center sm:inset-x-6 sm:top-6 sm:bottom-6 lg:max-w-6xl"
-          >
-            <div className="h-full max-h-[740px] w-full">
-              <VoyageDashboard />
-            </div>
+            <SpecSheet />
           </motion.div>
 
           {/* Stage 5: outro, hands off to the contact section */}
           <motion.a
             href="#contact"
             style={{ opacity: contactOpacity, pointerEvents: contactEvents }}
-            className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-1.5 font-mono text-xs tracking-widest text-neutral-300 transition hover:text-lime-400"
+            className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 font-mono text-xs text-neutral-300 hover:text-lime-400 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-400"
           >
             <span>contact</span>
-            <ArrowDown className="size-4 text-lime-400" />
+            <span className="h-5 w-px bg-neutral-600" aria-hidden="true" />
           </motion.a>
+        </div>
+
+        {/* Layer 30: native Voyage AI dashboard. A normal DOM subtree (no portal, no CSS 3D),
+            positioned and scaled from the rAF loop above. Hidden and non-interactive until
+            the laptop is open and the panel has fully expanded. */}
+        <div
+          ref={panelRef}
+          id="voyage-panel"
+          className="absolute left-0 top-0 z-30 origin-top-left"
+          style={{ visibility: 'hidden', opacity: 0, pointerEvents: 'none' }}
+        >
+          <VoyageDashboard />
+        </div>
+
+        {/* Layer 30: scroll hint in the band below the dashboard. The page scrolls normally
+            wherever the cursor is outside a dashboard scroll pane. */}
+        <div
+          ref={hintRef}
+          className="pointer-events-none absolute inset-x-0 bottom-5 z-30 text-center font-mono text-[11px] text-neutral-400"
+          style={{ opacity: 0 }}
+        >
+          Scroll here, outside the panel, to continue
         </div>
       </div>
     </div>

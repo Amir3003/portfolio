@@ -2,21 +2,17 @@ import { navItems } from '@/lib/site'
 
 export function SiteHeader() {
   return (
-    <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4">
-      <nav
-        aria-label="Primary"
-        className="glass mx-auto flex max-w-5xl items-center justify-between rounded-full px-4 py-2.5"
-      >
-        <a href="#top" className="flex items-center gap-2 font-mono text-sm text-neutral-200">
-          <span className="size-2 rounded-full bg-lime-500 shadow-[0_0_12px] shadow-lime-500" aria-hidden="true" />
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-neutral-800 bg-neutral-950">
+      <nav aria-label="Primary" className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <a href="#top" className="font-mono text-sm text-neutral-100">
           amir.dev
         </a>
-        <ul className="flex items-center gap-1">
+        <ul className="flex items-center gap-5">
           {navItems.map((item) => (
             <li key={item.href} className={item.href === '#architecture' ? 'hidden sm:block' : undefined}>
               <a
                 href={item.href}
-                className="rounded-full px-3 py-1.5 text-sm text-neutral-400 transition-colors hover:bg-neutral-800/60 hover:text-neutral-100"
+                className="text-sm text-neutral-400 underline-offset-4 hover:text-neutral-100 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-400"
               >
                 {item.label}
               </a>
