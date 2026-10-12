@@ -1,6 +1,5 @@
-import { ArrowDown, TerminalSquare } from 'lucide-react'
+import { ArrowDown } from 'lucide-react'
 import { SocialBadges } from '@/components/social-badges'
-import { TerminalCta } from '@/components/terminal-cta'
 
 export function Hero() {
   return (
@@ -43,10 +42,6 @@ export function Hero() {
             Explore Projects
             <ArrowDown className="size-4 transition-transform group-hover:translate-y-0.5" aria-hidden="true" />
           </a>
-          <TerminalCta className="glass inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 font-mono text-sm text-red-300 transition-colors hover:border-red-400/50 hover:text-red-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-400">
-            <TerminalSquare className="size-4" aria-hidden="true" />
-            Initialize Terminal
-          </TerminalCta>
         </div>
 
         <dl className="mt-6 grid w-full max-w-2xl grid-cols-3 gap-px overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-800">

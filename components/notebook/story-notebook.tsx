@@ -3,12 +3,10 @@
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { motion, useTransform, useMotionValue } from 'framer-motion'
-import { ArrowDown, TerminalSquare, Sparkles, BookOpen, Layers, Cpu } from 'lucide-react'
+import { ArrowDown, Sparkles, BookOpen, Layers, Cpu } from 'lucide-react'
 import { useSectionProgress } from '@/components/notebook/use-section-progress'
 import { VoyageDashboard } from '@/components/notebook/voyage-dashboard'
 import { SocialBadges } from '@/components/social-badges'
-import { TerminalCta } from '@/components/terminal-cta'
-import { focusTerminal } from '@/lib/site'
 
 // Dynamic import for WebGL Three.js Scene (no SSR)
 const NotebookScene = dynamic(() => import('@/components/notebook/notebook-scene'), {
@@ -163,10 +161,6 @@ export function StoryNotebook() {
                 <span>Explore Notebook</span>
                 <ArrowDown className="size-3.5 transition group-hover:translate-y-0.5" />
               </a>
-              <TerminalCta className="glass inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-xs text-red-300 transition hover:border-red-400/50 hover:text-red-200">
-                <TerminalSquare className="size-3.5" />
-                <span>Initialize Terminal</span>
-              </TerminalCta>
             </div>
 
             <dl className="grid w-full max-w-sm grid-cols-3 gap-px overflow-hidden rounded-xl border border-neutral-800 bg-neutral-800/80">
