@@ -3,15 +3,20 @@ export function SectionHeading({
   eyebrow,
   title,
   description,
+  index,
 }: {
   id: string
   eyebrow: string
   title: string
   description?: string
+  index?: string
 }) {
   return (
     <div className="mb-10 flex flex-col gap-3">
-      <p className="font-mono text-xs text-lime-400">{eyebrow}</p>
+      <p className="font-mono text-xs text-lime-400">
+        {index ? <span className="mr-2 text-neutral-500">{index}</span> : null}
+        {eyebrow}
+      </p>
       <h2 id={id} className="text-balance text-3xl font-semibold tracking-tight text-neutral-50 sm:text-4xl">
         {title}
       </h2>

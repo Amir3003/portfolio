@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400..700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
@@ -5,8 +6,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-code), ui-monospace, SFMono-Regular, monospace;
+  --font-sans: 'Instrument Sans', var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', var(--font-code), ui-monospace, SFMono-Regular, monospace;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -43,6 +44,8 @@
 
 :root {
   color-scheme: dark;
+  --font-ui: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-code: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.97 0 0);
   --card: oklch(0.205 0 0);

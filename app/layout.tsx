@@ -1,18 +1,7 @@
 import type { Metadata, Viewport } from 'next'
-import { IBM_Plex_Mono, Instrument_Sans } from 'next/font/google'
 import { AnalyticsGate, ConsentBanner } from '@/components/legal/consent'
 import { LenisProvider } from '@/components/lenis-provider'
 import './globals.css'
-
-// Both families are licensed under the SIL Open Font License 1.1 and are self-hosted at build time
-// by next/font, so visitors never make a request to Google.
-const ui = Instrument_Sans({ subsets: ['latin', 'latin-ext'], variable: '--font-ui', display: 'swap' })
-const code = IBM_Plex_Mono({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600'],
-  variable: '--font-code',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: 'Amir Nagiyev · AI & ML Engineer & Systems Architect',
@@ -48,7 +37,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${ui.variable} ${code.variable} bg-neutral-950`}>
+    <html lang="en" className="bg-neutral-950">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400..700&display=swap"
+        />
+      </head>
       <body className="font-sans antialiased">
         <LenisProvider>{children}</LenisProvider>
         <ConsentBanner />

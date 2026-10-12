@@ -27,3 +27,7 @@ export const navItems = [
   { label: 'Voyage AI', href: '#voyage' },
   { label: 'Contact', href: '#contact' },
 ] as const
+
+export function focusTerminal(): void {
+  // Terminal feature removed
+}
