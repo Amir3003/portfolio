@@ -3,16 +3,48 @@ import { AnalyticsGate, ConsentBanner } from '@/components/legal/consent'
 import { LenisProvider } from '@/components/lenis-provider'
 import './globals.css'
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: 'Amir Nagiyev',
+  url: 'https://www.a-nagiyev.dev',
+  jobTitle: 'Computer Science & AI Student',
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: 'Astana',
+    addressCountry: 'Kazakhstan',
+  },
+  sameAs: ['https://github.com/amir-nagiyev'],
+}
+
 export const metadata: Metadata = {
-  title: 'Amir Nagiyev · AI & ML Engineer & Systems Architect',
+  metadataBase: new URL('https://www.a-nagiyev.dev'),
+  title: 'Amir Nagiyev — Computer Science & AI Student Portfolio',
   description:
-    'Portfolio of Amir Nagiyev, a 17-year-old AI & ML undergraduate in Astana, Kazakhstan. Neural networks, Go systems engineering, FastAPI backends and the Voyage AI engine.',
-  keywords: ['Amir Nagiyev', 'AI', 'Machine Learning', 'Go', 'FastAPI', 'Next.js', 'Astana', 'Kazakhstan'],
-  authors: [{ name: 'Amir Nagiyev' }],
+    'Portfolio of Amir Nagiyev, a Computer Science and AI student based in Astana, Kazakhstan. Showcasing projects, technical skills in Go, Python, and AI development.',
+  keywords: ['Amir Nagiyev', 'AI', 'Machine Learning', 'Go', 'Python', 'Computer Science', 'Astana', 'Kazakhstan'],
+  authors: [{ name: 'Amir Nagiyev', url: 'https://www.a-nagiyev.dev' }],
+  alternates: {
+    canonical: 'https://www.a-nagiyev.dev/',
+  },
   openGraph: {
-    title: 'Amir Nagiyev · AI & ML Engineer & Systems Architect',
-    description: 'AI & ML undergraduate based in Astana, Kazakhstan.',
     type: 'website',
+    url: 'https://www.a-nagiyev.dev/',
+    title: 'Amir Nagiyev — Computer Science & AI Student Portfolio',
+    description:
+      'Explore projects and research by Amir Nagiyev, specializing in Computer Science and Artificial Intelligence.',
+    images: [
+      {
+        url: 'https://www.a-nagiyev.dev/preview.jpg',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Amir Nagiyev — Computer Science & AI Student Portfolio',
+    description:
+      'Explore projects and research by Amir Nagiyev, specializing in Computer Science and Artificial Intelligence.',
+    images: ['https://www.a-nagiyev.dev/preview.jpg'],
   },
   icons: {
     icon: [
@@ -39,11 +71,16 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-neutral-950">
       <head>
+        <meta name="google-site-verification" content="KPmgGOHR8PsHJk7j0fL7ttP_IwAu_gjf-6hLpbWV7KU" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400..700&display=swap"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body className="font-sans antialiased">
