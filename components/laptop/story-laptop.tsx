@@ -92,8 +92,8 @@ const COLUMNS: readonly Column[] = [
   {
     label: 'Academic & Languages',
     title: 'Astana node and linguistics',
-    body: 'Undergraduate in AI & ML based in Astana. Fluent in Russian and English. Japanese JLPT N2 study with Genki and Renshuu.',
-    tags: 'RU native, EN fluent, JA JLPT N2',
+    body: 'Undergraduate in AI & Machine Learning based in Astana. Fluent in Russian and English. Targeting Japanese JLPT N2 (currently studying via Genki and Renshuu).',
+    tags: 'RU native, EN fluent, Targeting JA JLPT N2',
   },
 ]
 

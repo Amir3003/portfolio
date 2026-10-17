@@ -646,7 +646,7 @@ export function VoyageDashboard() {
               Bespoke itinerary curation powered by Google Gemini. Direct roundtrip flights, handpicked 5-star suites,
               and transparent pricing in USD &amp; KZT with zero commission markups.{' '}
               <span className="font-semibold text-amber-300">
-                (Voyage AI is currently in active development — this is an interactive MVP prototype).
+                (Voyage AI is currently in active development: this is an interactive MVP prototype).
               </span>
             </p>
 

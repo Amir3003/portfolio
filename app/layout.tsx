@@ -8,21 +8,21 @@ const jsonLd = {
   '@type': 'Person',
   name: 'Amir Nagiyev',
   url: 'https://www.a-nagiyev.dev',
-  jobTitle: 'Computer Science & AI Student',
+  jobTitle: 'AI & Machine Learning Student',
   address: {
     '@type': 'PostalAddress',
     addressLocality: 'Astana',
     addressCountry: 'Kazakhstan',
   },
-  sameAs: ['https://github.com/amir-nagiyev'],
+  sameAs: ['https://github.com/amir-nagiyev', 'https://t.me/amirnagiyevdev'],
 }
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.a-nagiyev.dev'),
-  title: 'Amir Nagiyev — Computer Science & AI Student Portfolio',
+  title: 'Amir Nagiyev: AI & ML Student Portfolio',
   description:
-    'Portfolio of Amir Nagiyev, a Computer Science and AI student based in Astana, Kazakhstan. Showcasing projects, technical skills in Go, Python, and AI development.',
-  keywords: ['Amir Nagiyev', 'AI', 'Machine Learning', 'Go', 'Python', 'Computer Science', 'Astana', 'Kazakhstan'],
+    'Undergraduate in AI & Machine Learning based in Astana. Targeting Japanese JLPT N2.',
+  keywords: ['Amir Nagiyev', 'AI', 'Machine Learning', 'Go', 'Python', 'PyTorch', 'Astana', 'Kazakhstan'],
   authors: [{ name: 'Amir Nagiyev', url: 'https://www.a-nagiyev.dev' }],
   alternates: {
     canonical: 'https://www.a-nagiyev.dev/',
@@ -30,9 +30,9 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     url: 'https://www.a-nagiyev.dev/',
-    title: 'Amir Nagiyev — Computer Science & AI Student Portfolio',
+    title: 'Amir Nagiyev: AI & ML Student Portfolio',
     description:
-      'Explore projects and research by Amir Nagiyev, specializing in Computer Science and Artificial Intelligence.',
+      'Undergraduate in AI & Machine Learning based in Astana. Targeting Japanese JLPT N2.',
     images: [
       {
         url: 'https://www.a-nagiyev.dev/preview.jpg',
@@ -41,9 +41,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Amir Nagiyev — Computer Science & AI Student Portfolio',
+    title: 'Amir Nagiyev: AI & ML Student Portfolio',
     description:
-      'Explore projects and research by Amir Nagiyev, specializing in Computer Science and Artificial Intelligence.',
+      'Undergraduate in AI & Machine Learning based in Astana. Targeting Japanese JLPT N2.',
     images: ['https://www.a-nagiyev.dev/preview.jpg'],
   },
   icons: {

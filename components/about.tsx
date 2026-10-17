@@ -6,15 +6,15 @@ const cards = [
     icon: BrainCircuit,
     title: 'Academic focus',
     accent: 'text-lime-400',
-    body: 'Undergraduate in Artificial Intelligence & Machine Learning. Studying how models learn: optimization, representation and the architectures behind modern neural networks.',
+    body: 'Undergraduate in AI & Machine Learning based in Astana. Studying how models learn: optimization, representation and the architectures behind modern neural networks.',
     tags: ['Deep Learning', 'Optimization', 'Linear Algebra'],
   },
   {
     icon: Languages,
     title: 'Linguistic profile',
     accent: 'text-red-400',
-    body: 'Fluent in Russian and English. Actively learning Japanese with Genki → Renshuu stack, targeting JLPT N3 then N2.',
-    tags: ['RU · Fluent', 'EN · Fluent', 'JA · Learning'],
+    body: 'Fluent in Russian and English. Targeting Japanese JLPT N2 (currently studying via Genki and Renshuu).',
+    tags: ['RU · Fluent', 'EN · Fluent', 'Targeting JA JLPT N2'],
   },
   {
     icon: MemoryStick,

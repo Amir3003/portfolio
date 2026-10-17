@@ -34,7 +34,7 @@ export function OperatorBlock() {
           </li>
         ) : null}
         <li>
-          Telegram: <a href={legal.contactTelegram}>@sfulti</a>
+          Telegram: <a href={legal.contactTelegram}>@amirnagiyevdev</a>
         </li>
       </ul>
     </section>

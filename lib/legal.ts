@@ -22,7 +22,7 @@ export const legal: LegalProfile = {
   address: clean(process.env.NEXT_PUBLIC_LEGAL_ADDRESS) ?? 'Astana, Republic of Kazakhstan',
   registrationId: clean(process.env.NEXT_PUBLIC_LEGAL_REGISTRATION_ID),
   contactEmail: clean(process.env.NEXT_PUBLIC_CONTACT_EMAIL),
-  contactTelegram: 'https://t.me/sfulti',
+  contactTelegram: 'https://t.me/amirnagiyevdev',
   siteUrl: clean(process.env.NEXT_PUBLIC_SITE_URL),
   lastUpdated: '2026-10-12',
 }

@@ -5,7 +5,7 @@ export type Social = {
 }
 
 export const socials: readonly Social[] = [
-  { label: 'Telegram', handle: '@sfulti', href: 'https://t.me/sfulti' },
+  { label: 'Telegram', handle: '@amirnagiyevdev', href: 'https://t.me/amirnagiyevdev' },
   { label: 'GitHub', handle: 'Amir3003', href: 'https://github.com/Amir3003' },
   {
     label: 'LinkedIn',
