@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, IBM_Plex_Mono, Instrument_Sans, JetBrains_Mono } from 'next/font/google'
 import { AnalyticsGate, ConsentBanner } from '@/components/legal/consent'
 import { LenisProvider } from '@/components/lenis-provider'
+import { PERSON, SITE_DESCRIPTION, SITE_TITLE, SITE_URL, personJsonLd } from '@/lib/seo'
 import './globals.css'
 
 // Self-hosted at build time: no request to Google at runtime, so the CSP stays same-origin.
@@ -23,46 +24,40 @@ const qadamMono = JetBrains_Mono({
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: 'Amir Nagiyev',
-  url: 'https://www.a-nagiyev.dev',
-  jobTitle: 'AI & Machine Learning Student',
-  address: {
-    '@type': 'PostalAddress',
-    addressLocality: 'Astana',
-    addressCountry: 'Kazakhstan',
-  },
-  sameAs: ['https://github.com/amir-nagiyev', 'https://t.me/amirnagiyevdev'],
+  '@graph': [
+    personJsonLd(),
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: PERSON.name,
+      url: `${SITE_URL}/`,
+      inLanguage: 'en',
+      publisher: { '@id': `${SITE_URL}/#person` },
+    },
+  ],
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://www.a-nagiyev.dev'),
-  title: 'Amir Nagiyev: AI & ML Student Portfolio',
-  description:
-    'Undergraduate in AI & Machine Learning based in Astana. Targeting Japanese JLPT N2.',
-  keywords: ['Amir Nagiyev', 'AI', 'Machine Learning', 'Go', 'Python', 'PyTorch', 'Astana', 'Kazakhstan'],
-  authors: [{ name: 'Amir Nagiyev', url: 'https://www.a-nagiyev.dev' }],
-  alternates: {
-    canonical: 'https://www.a-nagiyev.dev/',
-  },
+  metadataBase: new URL(SITE_URL),
+  title: { default: SITE_TITLE, template: `%s · ${PERSON.name}` },
+  description: SITE_DESCRIPTION,
+  applicationName: PERSON.name,
+  keywords: ['Amir Nagiyev', 'Амир Нагиев', 'QADAM', 'Voyage AI', 'AI developer', 'Machine Learning', 'Astana', 'Kazakhstan'],
+  authors: [{ name: PERSON.name, url: SITE_URL }],
+  creator: PERSON.name,
+  alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
-    url: 'https://www.a-nagiyev.dev/',
-    title: 'Amir Nagiyev: AI & ML Student Portfolio',
-    description:
-      'Undergraduate in AI & Machine Learning based in Astana. Targeting Japanese JLPT N2.',
-    images: [
-      {
-        url: 'https://www.a-nagiyev.dev/preview.jpg',
-      },
-    ],
+    url: '/',
+    siteName: PERSON.name,
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    locale: 'en_US',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Amir Nagiyev: AI & ML Student Portfolio',
-    description:
-      'Undergraduate in AI & Machine Learning based in Astana. Targeting Japanese JLPT N2.',
-    images: ['https://www.a-nagiyev.dev/preview.jpg'],
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
   },
   icons: {
     icon: [

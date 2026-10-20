@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { LegalPage, OperatorBlock } from '@/components/legal/legal-page'
 
-export const metadata: Metadata = { title: 'Refund Policy', robots: { index: true, follow: true } }
+export const metadata: Metadata = { title: 'Refund Policy', robots: { index: true, follow: true }, alternates: { canonical: '/refund' } }
 
 export default function RefundPage() {
   return (

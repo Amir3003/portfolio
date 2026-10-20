@@ -511,6 +511,12 @@ export function QadamShowcase() {
               >
                 Live site <ChevronRightIcon size={12} />
               </a>
+              <a
+                href="/projects/qadam"
+                className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[12px] text-teal-200 transition-colors hover:border-teal-300/60 hover:text-white"
+              >
+                QADAM case study <ChevronRightIcon size={12} />
+              </a>
             </div>
           </footer>
         </div>

@@ -1,0 +1,21 @@
+name: IndexNow
+
+# After each push to main, wait for the Vercel deploy and tell Bing and Yandex
+# which URLs to recrawl.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for the deploy
+        run: sleep 180
+      - name: Submit sitemap URLs
+        run: node scripts/indexnow.mjs

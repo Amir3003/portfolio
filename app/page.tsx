@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { AmbientBackground } from '@/components/ambient-background'
 import { Contact } from '@/components/contact'
 import { CookieSettingsButton } from '@/components/legal/consent'
+import { ProjectsSection } from '@/components/projects-section'
 import { StoryLaptop } from '@/components/laptop/story-laptop'
 import { SiteHeader } from '@/components/site-header'
 import { legal } from '@/lib/legal'
@@ -19,6 +20,7 @@ export default function Page() {
       <SiteHeader />
       <main id="main">
         <StoryLaptop />
+        <ProjectsSection />
         <Contact />
       </main>
       <footer className="border-t border-neutral-800 px-4 py-8">

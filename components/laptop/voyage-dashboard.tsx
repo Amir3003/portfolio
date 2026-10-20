@@ -633,7 +633,7 @@ export function VoyageDashboard() {
               </span>
             </div>
 
-            <h1 className="mt-4 text-[28px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h2 className="mt-4 text-[28px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
               Voyage AI.
               <br />
               <span className="bg-gradient-to-r from-teal-200 via-cyan-300 to-sky-400 bg-clip-text text-transparent">
@@ -641,7 +641,7 @@ export function VoyageDashboard() {
                 <br />
                 Travel Concierge
               </span>
-            </h1>
+            </h2>
 
             <p className="mx-auto mt-4 max-w-2xl text-[13px] leading-relaxed text-slate-300 sm:text-base">
               Bespoke itinerary curation powered by Google Gemini. Direct roundtrip flights, handpicked 5-star suites,
@@ -810,6 +810,9 @@ export function VoyageDashboard() {
             <p className="max-w-xl text-[11px] text-amber-300/80">
               Voyage AI is currently in active development (MVP stage). Live GDS flight feeds and autonomous reservation pipelines are continuously updated.
             </p>
+            <a href="/projects/voyage-ai" className="mt-1 font-mono text-[11px] text-teal-300 underline underline-offset-4 hover:text-teal-200">
+              Voyage AI case study
+            </a>
           </footer>
         </div>
       </div>

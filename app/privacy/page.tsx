@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { DataRequestForm } from '@/components/legal/data-request-form'
 import { LegalPage, OperatorBlock } from '@/components/legal/legal-page'
 
-export const metadata: Metadata = { title: 'Privacy Policy', robots: { index: true, follow: true } }
+export const metadata: Metadata = { title: 'Privacy Policy', robots: { index: true, follow: true }, alternates: { canonical: '/privacy' } }
 
 export default function PrivacyPage() {
   return (
