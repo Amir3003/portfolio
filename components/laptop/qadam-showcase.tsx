@@ -218,7 +218,7 @@ function PillarShowcase() {
   }
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[3fr_2fr] lg:gap-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-6">
       <div className={`${CARD} flex flex-col gap-5 p-5 sm:p-8`}>
         <div className="flex items-center justify-between border-b border-teal-200/80 pb-3">
           <div className="flex items-center gap-2">
@@ -402,7 +402,7 @@ export function QadamShowcase() {
       <div
         ref={scrollRef}
         data-lenis-prevent="true"
-        className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto"
+        className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain"
       >
         {/* Hero: the welcome screen of the live site */}
         <section className="relative flex min-h-full flex-col items-center justify-center px-4 pt-10 pb-20 text-center sm:px-6">

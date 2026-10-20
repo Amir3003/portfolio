@@ -84,12 +84,6 @@
   .lenis.lenis-smooth [data-lenis-prevent] {
     overscroll-behavior: contain;
   }
-  /* Touch: let a nested pane hand the swipe back to the page once it reaches its end. */
-  @media (pointer: coarse) {
-    .lenis.lenis-smooth [data-lenis-prevent] {
-      overscroll-behavior: auto;
-    }
-  }
   .lenis.lenis-stopped {
     overflow: clip;
   }
@@ -229,4 +223,29 @@
 }
 .qadam-flip {
   animation: qadam-flip-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/*
+ * Project panels inside the scroll story. Never scroll sideways. On touch screens the panel
+ * is a preview that does not capture swipes (they move the page), until it is opened full
+ * screen, where its pane scrolls on its own and nothing leaks to the page behind it.
+ */
+.story-panel [data-lenis-prevent] {
+  overflow-x: hidden;
+}
+@media (pointer: coarse) {
+  .story-panel[data-fullscreen='false'] [data-lenis-prevent] {
+    overflow-y: hidden;
+    touch-action: pan-y;
+  }
+  .story-panel[data-fullscreen='true'] [data-lenis-prevent] {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  .story-panel[data-fullscreen='true'] > div:first-child {
+    border-radius: 0;
+    border-width: 0;
+  }
 }

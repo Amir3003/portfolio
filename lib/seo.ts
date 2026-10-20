@@ -1,4 +1,4 @@
-import { qadamLinks, socials, voyageLinks } from '@/lib/site'
+import { PERSONAL_EMAIL, qadamLinks, socials, voyageLinks } from '@/lib/site'
 
 /** Canonical origin. The bare domain 301-redirects here (Vercel domain settings). */
 export const SITE_URL = 'https://www.a-nagiyev.dev'
@@ -67,8 +67,8 @@ export const PROJECTS: readonly ProjectSeo[] = [
 
 export const LAST_UPDATED = '2026-10-20'
 
-/** Profiles that point back to this site, for `sameAs`. */
-export const SAME_AS = socials.map((s) => s.href)
+/** Personal profiles only: the QADAM accounts belong to the organisation, not the person. */
+export const SAME_AS = socials.filter((s) => !/qadam/i.test(s.href)).map((s) => s.href)
 
 export const absolute = (path: string): string => new URL(path, SITE_URL).toString()
 
@@ -82,9 +82,15 @@ export function personJsonLd() {
     url: `${SITE_URL}/`,
     image: absolute('/opengraph-image'),
     sameAs: SAME_AS,
+    email: `mailto:${PERSONAL_EMAIL}`,
     address: { '@type': 'PostalAddress', addressLocality: PERSON.city, addressCountry: PERSON.country },
     alumniOf: { '@type': 'CollegeOrUniversity', name: PERSON.school },
-    worksFor: { '@type': 'Organization', name: 'QADAM', url: qadamLinks.site },
+    worksFor: {
+      '@type': 'Organization',
+      name: 'QADAM',
+      url: qadamLinks.site,
+      sameAs: [qadamLinks.instagram, qadamLinks.tiktok],
+    },
     knowsLanguage: ['ru', 'en'],
     knowsAbout: ['Machine Learning', 'PyTorch', 'Go', 'Python', 'TypeScript', 'React', 'AI agents'],
   }

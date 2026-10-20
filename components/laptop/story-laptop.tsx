@@ -16,6 +16,7 @@ import {
 } from '@/components/laptop/story-timeline'
 import { useLaptopProgress } from '@/components/laptop/use-laptop-progress'
 import { VoyageDashboard } from '@/components/laptop/voyage-dashboard'
+import { getLenis } from '@/lib/lenis'
 
 // WebGL scene, client only.
 function SceneSkeleton() {
@@ -131,6 +132,46 @@ function SpecSheet({ id }: { id?: string }) {
   )
 }
 
+/**
+ * Touch screens only. While the panel sits in the story it is a preview; this opens it as a
+ * full screen overlay with its own scroll, and the same control closes it again.
+ */
+function FullscreenToggle({
+  open,
+  label,
+  onOpen,
+  onClose,
+}: {
+  open: boolean
+  label: string
+  onOpen: () => void
+  onClose: () => void
+}) {
+  if (open) {
+    return (
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label={`Close ${label}`}
+        className="fixed left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/90 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg"
+        style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+      >
+        <span aria-hidden="true">✕</span> Close
+      </button>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="absolute bottom-4 left-1/2 z-50 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/85 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg pointer-coarse:flex"
+    >
+      Open {label} full screen
+      <span aria-hidden="true">↗</span>
+    </button>
+  )
+}
+
 export function StoryLaptop() {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -147,6 +188,30 @@ export function StoryLaptop() {
   const [hasWebGL, setHasWebGL] = useState(true)
   /** True while the pinned section is on screen; the WebGL and DOM loops idle otherwise. */
   const [inView, setInView] = useState(true)
+  /**
+   * Phones: the panels do not scroll inside the story (a swipe always moves the page), and
+   * "Open full screen" shows the same panel as a fixed overlay with its own scroll instead.
+   */
+  const [fullscreen, setFullscreen] = useState<'voyage' | 'qadam' | null>(null)
+  const fullscreenRef = useRef<'voyage' | 'qadam' | null>(null)
+  fullscreenRef.current = fullscreen
+
+  useEffect(() => {
+    if (!fullscreen) return
+    const root = document.documentElement
+    const previous = root.style.overflow
+    root.style.overflow = 'hidden'
+    getLenis()?.stop()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      root.style.overflow = previous
+      getLenis()?.start()
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [fullscreen])
   const [reducedMotion, setReducedMotion] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -204,9 +269,9 @@ export function StoryLaptop() {
   useEffect(() => {
     if (useFallback || !inView) return
     const hint = hintRef.current
-    const panels: Array<{ el: HTMLDivElement; window: PanelWindow; visible: boolean }> = []
-    if (voyageRef.current) panels.push({ el: voyageRef.current, window: VOYAGE_WINDOW, visible: false })
-    if (qadamRef.current) panels.push({ el: qadamRef.current, window: QADAM_WINDOW, visible: false })
+    const panels: Array<{ id: 'voyage' | 'qadam'; el: HTMLDivElement; window: PanelWindow; visible: boolean }> = []
+    if (voyageRef.current) panels.push({ id: 'voyage', el: voyageRef.current, window: VOYAGE_WINDOW, visible: false })
+    if (qadamRef.current) panels.push({ id: 'qadam', el: qadamRef.current, window: QADAM_WINDOW, visible: false })
     if (panels.length === 0) return
 
     let raf = 0
@@ -240,13 +305,30 @@ export function StoryLaptop() {
 
       let hintOpacity = 0
       for (const panel of panels) {
+        const el = panel.el
+        if (fullscreenRef.current === panel.id) {
+          // Full screen overlay: fixed to the viewport, ignores the scroll story.
+          panel.visible = true
+          el.style.position = 'fixed'
+          el.style.zIndex = '80'
+          el.style.width = '100%'
+          el.style.height = '100dvh'
+          el.style.transform = 'none'
+          el.style.clipPath = 'none'
+          el.style.visibility = 'visible'
+          el.style.opacity = '1'
+          el.style.pointerEvents = 'auto'
+          continue
+        }
+        el.style.position = ''
+        el.style.zIndex = ''
+
         const opacity = panelOpacity(panel.window, p)
         if (opacity < 0.001) {
           hide(panel)
           continue
         }
         panel.visible = true
-        const el = panel.el
         const e = expandAmount(panel.window, p)
         const s = lerp(s0, 1, e)
         const x = lerp(rect.x, fx, e)
@@ -365,7 +447,11 @@ export function StoryLaptop() {
       <div id="voyage" className="absolute" style={{ top: anchorTop((VOYAGE_WINDOW.expand[1] + VOYAGE_WINDOW.collapse[0]) / 2) }} />
       <div id="qadam" className="absolute" style={{ top: anchorTop((QADAM_WINDOW.expand[1] + QADAM_WINDOW.collapse[0]) / 2) }} />
 
-      <div ref={viewportRef} className="sticky top-0 h-screen w-full overflow-hidden">
+      {/* Sticky creates a stacking context: lift it above the site header while a panel is full screen. */}
+      <div
+        ref={viewportRef}
+        className={`sticky top-0 h-screen w-full overflow-hidden ${fullscreen ? 'z-[70]' : ''}`}
+      >
         {/* Layer 10: WebGL laptop. Never receives pointer events. */}
         {mounted && (
           <motion.div
@@ -440,18 +526,32 @@ export function StoryLaptop() {
         <div
           ref={voyageRef}
           id="voyage-panel"
-          className="absolute left-0 top-0 z-30 origin-top-left"
+          data-fullscreen={fullscreen === 'voyage'}
+          className="story-panel absolute left-0 top-0 z-30 origin-top-left"
           style={{ visibility: 'hidden', opacity: 0, pointerEvents: 'none' }}
         >
           <VoyageDashboard />
+          <FullscreenToggle
+            open={fullscreen === 'voyage'}
+            label="Voyage AI"
+            onOpen={() => setFullscreen('voyage')}
+            onClose={() => setFullscreen(null)}
+          />
         </div>
         <div
           ref={qadamRef}
           id="qadam-panel"
-          className="absolute left-0 top-0 z-30 origin-top-left"
+          data-fullscreen={fullscreen === 'qadam'}
+          className="story-panel absolute left-0 top-0 z-30 origin-top-left"
           style={{ visibility: 'hidden', opacity: 0, pointerEvents: 'none' }}
         >
           <QadamShowcase />
+          <FullscreenToggle
+            open={fullscreen === 'qadam'}
+            label="QADAM"
+            onOpen={() => setFullscreen('qadam')}
+            onClose={() => setFullscreen(null)}
+          />
         </div>
 
         {/* Layer 30: scroll hint in the band below the dashboard. The page scrolls normally
@@ -462,7 +562,7 @@ export function StoryLaptop() {
           style={{ opacity: 0 }}
         >
           <span className="pointer-coarse:hidden">Scroll here, outside the panel, to continue</span>
-          <span className="hidden pointer-coarse:inline">Swipe here to continue</span>
+          <span className="hidden pointer-coarse:inline">Swipe to continue</span>
         </div>
       </div>
     </div>

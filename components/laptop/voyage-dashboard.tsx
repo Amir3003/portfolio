@@ -617,7 +617,7 @@ export function VoyageDashboard() {
       {/* Scrollable body */}
       <div
         data-lenis-prevent="true"
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto px-3 py-4 sm:px-8 sm:py-8 lg:px-12"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-4 sm:px-8 sm:py-8 lg:px-12"
       >
         <div className="mx-auto flex max-w-5xl flex-col gap-8 sm:gap-10">
           {/* Hero Banner from Screenshot 1 */}
@@ -733,7 +733,7 @@ export function VoyageDashboard() {
               ref={logRef}
               data-lenis-prevent="true"
               aria-live="polite"
-              className="flex max-h-56 min-h-28 flex-col gap-2.5 overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto pr-1"
+              className="flex max-h-56 min-h-28 flex-col gap-2.5 overflow-y-auto overscroll-contain pr-1"
             >
               {messages.map((m) => (
                 <Bubble key={m.id} message={m} />
@@ -830,7 +830,7 @@ export function VoyageDashboard() {
         >
           <div
             data-lenis-prevent="true"
-            className="max-h-full w-full max-w-3xl overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto rounded-2xl border border-teal-300/25 bg-[#0b1426] shadow-[0_30px_90px_rgba(0,0,0,0.9)]"
+            className="max-h-full w-full max-w-3xl overflow-y-auto overscroll-contain rounded-2xl border border-teal-300/25 bg-[#0b1426] shadow-[0_30px_90px_rgba(0,0,0,0.9)]"
           >
             {step === 'suites' ? (
               <div>
