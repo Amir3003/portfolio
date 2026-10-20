@@ -545,7 +545,7 @@ function LaptopMesh({ progress, bottomInsetRef, screenRectRef }: LaptopMeshProps
     m.screen.emissiveIntensity = 0.2 + pose.glow * 0.25
     const qadamMix = smoothstep(SCREEN_SWITCH[0], SCREEN_SWITCH[1], progress.get())
     m.qadamScreen.opacity = qadamMix
-    m.qadamScreen.emissiveIntensity = (0.2 + pose.glow * 0.25) * 0.7
+    m.qadamScreen.emissiveIntensity = 0.2 + pose.glow * 0.25
     m.qadamScreen.visible = qadamMix > 0.001
 
     // Publish the projected display rectangle for the DOM hybrid transition.

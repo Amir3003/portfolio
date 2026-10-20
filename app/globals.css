@@ -209,3 +209,24 @@
 @utility fade-mask-y {
   mask-image: linear-gradient(to bottom, transparent 0, #000 1rem, #000 calc(100% - 1rem), transparent 100%);
 }
+
+/* QADAM showcase: switch the font stacks to the startup's own type inside the panel. */
+.qadam-ui {
+  --font-ui: var(--font-qadam-sans);
+  --font-code: var(--font-qadam-mono);
+}
+
+/* Pillar switch in the QADAM showcase, after the live site's 3D flip. */
+@keyframes qadam-flip-in {
+  from {
+    opacity: 0;
+    transform: perspective(1400px) translate3d(0, 24px, 0) rotateX(-12deg) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.qadam-flip {
+  animation: qadam-flip-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

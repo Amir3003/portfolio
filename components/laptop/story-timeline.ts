@@ -7,8 +7,8 @@
  *  0.215 - 0.385  bottom chassis and architecture
  *  0.385 - 0.550  flips upright, lid opens on Voyage AI
  *  0.565 - 0.720  Voyage AI panel expands, holds, returns to the display
- *  0.725 - 0.745  display switches to QADAM Hub
- *  0.750 - 0.900  QADAM Hub panel expands, holds, returns to the display
+ *  0.725 - 0.745  display switches to QADAM
+ *  0.750 - 0.900  QADAM panel expands, holds, returns to the display
  *  0.910 - 0.970  lid closes, hand-off to Contact
  */
 
@@ -40,7 +40,7 @@ export const QADAM_WINDOW: PanelWindow = {
   fadeOut: [0.897, 0.907],
 }
 
-/** The laptop display crossfades from the Voyage AI artwork to QADAM Hub. */
+/** The laptop display crossfades from the Voyage AI artwork to QADAM. */
 export const SCREEN_SWITCH: readonly [number, number] = [0.722, 0.745]
 
 /** Pose keyframes of the laptop (see laptop-scene.tsx). */

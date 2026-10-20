@@ -1,53 +1,293 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowRight, Bell, Check, ExternalLink, FileSearch, Radar } from 'lucide-react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { QadamAmbient } from '@/components/qadam/qadam-ambient'
+import {
+  ChevronRightIcon,
+  DiscordIcon,
+  DockerIcon,
+  InstagramIcon,
+  KakaoTalkIcon,
+  LinuxIcon,
+  LlmIcon,
+  PyTorchIcon,
+  TelegramIcon,
+  TikTokIcon,
+} from '@/components/qadam/qadam-icons'
 import { qadamLinks } from '@/lib/site'
 
+/*
+ * QADAM, the second project in the laptop story: the welcome page of the live web app
+ * (same background, fonts, colours and cards), plus a radar feed demo, the engineering story
+ * and the socials. Everything scrolls inside the panel, so in-panel links scroll that pane
+ * instead of the page (scrolling the page would move the story on and collapse the panel).
+ */
+
+type Stage = 0 | 1 | 2
+
+/** Light card surface of the QADAM showcase. */
+const CARD =
+  'rounded-3xl border border-teal-300/40 bg-gradient-to-br from-[#EDF7F6]/95 via-[#F3F6FF]/95 to-[#E8F4F8]/95 text-slate-900 shadow-[0_20px_50px_-15px_rgba(6,182,212,0.22)]'
+
+const GRADIENT_BUTTON =
+  'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-900/30 transition-all hover:from-emerald-400 hover:to-teal-500'
+
+const PILLARS: ReadonlyArray<{ title: string; body: string; points: readonly string[] }> = [
+  {
+    title: 'Verified Eligibility & Matching',
+    body: 'Real-time indexing of global hackathons, research grants, and internships matched against your stack and actual academic eligibility requirements.',
+    points: ['Zero scrapers: verified sponsors & funding', 'Automated academic deadline calculation'],
+  },
+  {
+    title: 'CV Gap Analysis & Team Network',
+    body: 'Precision resume benchmarking against target roles, interactive skill verification, and peer discovery for hackathon squads.',
+    points: ['ATS linear density compatibility checks', 'Interactive 5-question Skill Lab tests'],
+  },
+  {
+    title: 'Instant Messenger Alerts',
+    body: 'Direct real-time notifications delivered via Telegram, KakaoTalk, and Discord with server-side privacy filtering.',
+    points: ['Direct phone notifications for upcoming deadlines', 'Zero PII leakage during webhook transmission'],
+  },
+]
+
 /* -------------------------------------------------------------------------- */
-/*  Content                                                                   */
+/*  Stage content (from the web app's welcome page)                           */
+/* -------------------------------------------------------------------------- */
+
+function MatchRow({ tone, title, meta, match }: { tone: 'emerald' | 'sky' | 'amber'; title: string; meta: string; match: string }) {
+  const styles = {
+    emerald: ['from-emerald-50 to-teal-100/80 border-emerald-300/60', 'text-emerald-950', 'text-emerald-800', 'bg-emerald-600'],
+    sky: ['from-sky-50 to-cyan-100/80 border-sky-300/60', 'text-sky-950', 'text-sky-800', 'bg-sky-600'],
+    amber: ['from-amber-50 to-orange-100/80 border-amber-300/60', 'text-amber-950', 'text-amber-800', 'bg-amber-600'],
+  }[tone]
+  return (
+    <div className={`flex items-center justify-between gap-3 rounded-xl border bg-gradient-to-br p-3.5 shadow-xs ${styles[0]}`}>
+      <div className="min-w-0">
+        <div className={`truncate text-[13px] font-bold ${styles[1]}`}>{title}</div>
+        <div className={`mt-0.5 truncate font-mono text-[11px] leading-[14px] ${styles[2]}`}>{meta}</div>
+      </div>
+      <span className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[11px] font-bold leading-[14px] text-white ${styles[3]}`}>
+        {match}
+      </span>
+    </div>
+  )
+}
+
+function SkillTile({ icon, label, score, className }: { icon: ReactNode; label: string; score: string; className: string }) {
+  return (
+    <div className={`flex flex-col items-center rounded-xl border bg-gradient-to-br p-2.5 text-center font-mono ${className}`}>
+      {icon}
+      <div className="mt-1 text-[12px] font-bold">{label}</div>
+      <div className="text-[11px] opacity-80">Score: {score}</div>
+    </div>
+  )
+}
+
+function Alert({
+  icon,
+  tone,
+  from,
+  time,
+  text,
+}: {
+  icon: ReactNode
+  tone: string
+  from: string
+  time: string
+  text: string
+}) {
+  return (
+    <div className={`flex items-start gap-2.5 rounded-xl border bg-gradient-to-br p-3 shadow-xs ${tone}`}>
+      <div className="flex size-8 shrink-0 items-center justify-center">{icon}</div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2 font-mono text-[11px] leading-[14px]">
+          <span className="truncate font-bold">{from}</span>
+          <span className="shrink-0 opacity-75">{time}</span>
+        </div>
+        <p className="mt-0.5 text-[12px] leading-relaxed opacity-90">{text}</p>
+      </div>
+    </div>
+  )
+}
+
+function StageContent({ stage }: { stage: Stage }) {
+  if (stage === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
+            Real-Time Academic Indexing
+          </div>
+          <h3 className="font-mono text-2xl font-bold tracking-tight text-indigo-950 sm:text-4xl">01 / ELIGIBILITY RADAR</h3>
+        </div>
+        <div className="space-y-2.5">
+          <MatchRow tone="emerald" title="Nebius x NVIDIA Global AI Hackathon" meta="GPU Compute & Multimodal Agents Track · Virtual" match="94% MATCH" />
+          <MatchRow tone="sky" title="MEXT Scholarship: Graduate Research in AI" meta="Full Government Sponsorship · Ministry of Education Japan" match="88% MATCH" />
+          <MatchRow tone="amber" title="Physical AI & Robotics Travel Grant" meta="NeurIPS 2026 Conference Travel · Verified Academic Track" match="91% MATCH" />
+        </div>
+      </div>
+    )
+  }
+  if (stage === 1) {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-1">
+          <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-indigo-700">
+            Linear ATS Resume & Benchmark Matrix
+          </div>
+          <h3 className="font-mono text-2xl font-bold tracking-tight text-indigo-950 sm:text-4xl">02 / CV & SKILL BENCHMARK</h3>
+        </div>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-indigo-300/60 bg-gradient-to-br from-indigo-50 to-violet-100/80 p-3.5 text-indigo-950 shadow-xs">
+          <div>
+            <div className="font-mono text-[11px] font-semibold uppercase text-indigo-700">CV Health Score</div>
+            <div className="mt-0.5 font-mono text-2xl font-bold">
+              89 <span className="text-sm text-indigo-400">/ 100</span>
+              <span className="ml-2 inline-block whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 font-sans text-[11px] font-medium text-emerald-700">
+                Top Quartile
+              </span>
+            </div>
+          </div>
+          <div className="text-right font-mono text-[11px]">
+            <div className="text-indigo-700">Benchmark Fit</div>
+            <div className="mt-0.5 font-bold text-indigo-900">4 of 4 Skills Verified</div>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <SkillTile icon={<PyTorchIcon size={20} />} label="PyTorch" score="95%" className="border-amber-300/60 from-amber-50 to-orange-100/80 text-amber-950" />
+          <SkillTile icon={<DockerIcon size={20} />} label="Docker" score="90%" className="border-sky-300/60 from-sky-50 to-cyan-100/80 text-sky-950" />
+          <SkillTile icon={<LlmIcon size={20} className="text-indigo-700" />} label="LLMs" score="92%" className="border-indigo-300/60 from-indigo-50 to-violet-100/80 text-indigo-950" />
+          <SkillTile icon={<LinuxIcon size={20} className="text-emerald-700" />} label="Linux" score="88%" className="border-emerald-300/60 from-emerald-50 to-teal-100/80 text-emerald-950" />
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-sky-700">
+          Multi-Channel Push Notification Bot
+        </div>
+        <h3 className="font-mono text-2xl font-bold tracking-tight text-indigo-950 sm:text-4xl">03 / INSTANT MESSENGER BOTS</h3>
+      </div>
+      <div className="space-y-2.5">
+        <Alert
+          icon={<TelegramIcon size={26} />}
+          tone="border-sky-300/60 from-sky-50 to-cyan-100/80 text-sky-950"
+          from="@QadamAgentBot"
+          time="Just now"
+          text="High-compatibility Hackathon detected (94% fit). Registration closes in 3 days. Proposal drafted in /workspace/qadam."
+        />
+        <Alert
+          icon={<DiscordIcon size={26} />}
+          tone="border-indigo-300/60 from-indigo-50 to-violet-100/80 text-indigo-950"
+          from="Discord Webhook · Squad Channel"
+          time="2m ago"
+          text="New Travel Grant open for CVPR candidates with verified PyTorch credentials."
+        />
+        <Alert
+          icon={<KakaoTalkIcon size={26} />}
+          tone="border-amber-300/60 from-amber-50 to-yellow-100/80 text-amber-950"
+          from="KakaoTalk Channel · QADAM"
+          time="12m ago"
+          text="Tokyo Institute of Tech Exchange deadline synchronized with your local calendar."
+        />
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Pillars showcase                                                          */
+/* -------------------------------------------------------------------------- */
+
+function PillarShowcase() {
+  const [stage, setStage] = useState<Stage>(0)
+  const [auto, setAuto] = useState(true)
+  const pillar = PILLARS[stage]
+
+  // Cycles through the pillars like the scroll-driven original, until the visitor picks one.
+  useEffect(() => {
+    if (!auto) return
+    const id = window.setInterval(() => setStage((s) => ((s + 1) % 3) as Stage), 6000)
+    return () => window.clearInterval(id)
+  }, [auto])
+
+  const pick = (s: Stage) => {
+    setAuto(false)
+    setStage(s)
+  }
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[3fr_2fr] lg:gap-6">
+      <div className={`${CARD} flex flex-col gap-5 p-5 sm:p-8`}>
+        <div className="flex items-center justify-between border-b border-teal-200/80 pb-3">
+          <div className="flex items-center gap-2">
+            <span className="size-2.5 animate-pulse rounded-full bg-emerald-500" />
+            <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-teal-950">Interactive Showcase</span>
+          </div>
+          <div role="tablist" aria-label="QADAM pillars" className="flex items-center gap-1.5">
+            {([0, 1, 2] as const).map((s) => (
+              <button
+                key={s}
+                type="button"
+                role="tab"
+                aria-selected={stage === s}
+                onClick={() => pick(s)}
+                className={`h-7 rounded-full px-3.5 font-mono text-[11px] font-bold transition-all ${
+                  stage === s
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs'
+                    : 'border border-teal-200/60 bg-white/80 text-teal-800 hover:bg-white'
+                }`}
+              >
+                0{s + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div key={stage} className="qadam-flip min-h-[17rem] sm:min-h-[18.5rem]">
+          <StageContent stage={stage} />
+        </div>
+
+        <div className="flex items-center gap-1.5 border-t border-teal-200/80 pt-4" aria-hidden="true">
+          {([0, 1, 2] as const).map((s) => (
+            <span
+              key={s}
+              className={`h-1.5 rounded-full transition-all duration-500 ${stage === s ? 'w-7 bg-emerald-500' : 'w-1.5 bg-teal-300'}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className={`${CARD} flex flex-col justify-center gap-4 p-5 sm:p-8`}>
+        <p className="font-mono text-[11px] uppercase tracking-wider text-teal-700">
+          Pillar 0{stage + 1} / 03
+        </p>
+        <h3 className="text-2xl font-bold leading-tight tracking-tight text-indigo-950 sm:text-3xl">{pillar.title}</h3>
+        <p className="text-[14px] leading-relaxed text-slate-700 sm:text-[15px]">{pillar.body}</p>
+        <ul className="space-y-1.5">
+          {pillar.points.map((point) => (
+            <li key={point} className="font-mono text-[12px] text-teal-800">
+              ✓ {point}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Radar feed demo                                                           */
 /* -------------------------------------------------------------------------- */
 
 type Kind = 'all' | 'hackathon' | 'grant' | 'internship'
 
-interface Opportunity {
-  kind: Exclude<Kind, 'all'>
-  title: string
-  host: string
-  fit: number
-  note: string
-}
-
-/** Illustrative feed items: the shape of what the radar returns, not live data. */
-const FEED: readonly Opportunity[] = [
-  {
-    kind: 'hackathon',
-    title: 'Global AI Agents Hackathon',
-    host: 'Online · team of 2 to 4',
-    fit: 94,
-    note: 'Python and LLM tooling match your stack',
-  },
-  {
-    kind: 'grant',
-    title: 'Student Research Travel Grant',
-    host: 'Conference travel · undergraduates',
-    fit: 88,
-    note: 'Eligible: undergraduate, first-author not required',
-  },
-  {
-    kind: 'internship',
-    title: 'ML Engineering Summer Internship',
-    host: 'Remote · 12 weeks',
-    fit: 81,
-    note: 'Gap: one deployed project with metrics',
-  },
-  {
-    kind: 'hackathon',
-    title: 'Open Source Climate Data Sprint',
-    host: 'Hybrid · Astana and online',
-    fit: 76,
-    note: 'Good first squad event, no prior wins needed',
-  },
+const FEED: ReadonlyArray<{ kind: Exclude<Kind, 'all'>; tone: 'emerald' | 'sky' | 'amber'; title: string; meta: string; match: string }> = [
+  { kind: 'hackathon', tone: 'emerald', title: 'Global AI Agents Hackathon', meta: 'Online · teams of 2 to 4 · Python and LLM tooling', match: '94% MATCH' },
+  { kind: 'grant', tone: 'sky', title: 'Student Research Travel Grant', meta: 'Conference travel · undergraduates eligible', match: '88% MATCH' },
+  { kind: 'internship', tone: 'amber', title: 'ML Engineering Summer Internship', meta: 'Remote · 12 weeks · gap: one deployed project', match: '81% MATCH' },
+  { kind: 'hackathon', tone: 'emerald', title: 'Open Source Climate Data Sprint', meta: 'Hybrid · Astana and online · first squad friendly', match: '76% MATCH' },
 ]
 
 const FILTERS: ReadonlyArray<{ id: Kind; label: string }> = [
@@ -57,36 +297,54 @@ const FILTERS: ReadonlyArray<{ id: Kind; label: string }> = [
   { id: 'internship', label: 'Internships' },
 ]
 
-const STATS: ReadonlyArray<readonly [string, string]> = [
-  ['4x', 'Radar scans a day'],
-  ['3', 'Messenger channels'],
-  ['3', 'Product pillars'],
-  ['0', 'PII in webhooks'],
-]
+function RadarDemo() {
+  const [filter, setFilter] = useState<Kind>('all')
+  const items = FEED.filter((o) => filter === 'all' || o.kind === filter)
 
-const PILLARS = [
-  {
-    icon: Radar,
-    label: '01 / Eligibility Radar',
-    title: 'Only what you can actually apply to',
-    body: 'A scheduled GitHub Actions pipeline runs four searches a day, extracts grants, hackathons and internships in batches and merges them into one feed. Items are matched against your stack and real eligibility rules, and stale entries expire on their own.',
-    points: ['Verified sponsors, no scraped spam', 'Deadlines normalised, or "see official page"', 'Prepare & Apply opens the exact opportunity'],
-  },
-  {
-    icon: FileSearch,
-    label: '02 / CV & Skill Lab',
-    title: 'See the gap before the recruiter does',
-    body: 'Your CV is benchmarked against a target role: ATS keyword density, a health score and the skills that are missing. Short five question skill checks turn claims into verified badges, and the network page helps you find teammates.',
-    points: ['CV health score and benchmark fit', 'Five question skill verification', 'Teammates and squad discovery'],
-  },
-  {
-    icon: Bell,
-    label: '03 / Messenger Bots',
-    title: 'Deadlines come to you',
-    body: 'Telegram and Discord bots, plus a KakaoTalk channel, push new matches and deadline reminders where students already are. Webhooks are filtered server side so no personal data leaves the platform.',
-    points: ['Telegram bot and Discord server', 'KakaoTalk channel chatbot', 'Server-side privacy filtering'],
-  },
-] as const
+  return (
+    <section aria-labelledby="qadam-radar-title" className={`${CARD} p-5 sm:p-8`}>
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-teal-200/80 pb-3">
+        <div>
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Try it</p>
+          <h3 id="qadam-radar-title" className="mt-1 text-2xl font-bold tracking-tight text-indigo-950 sm:text-3xl">
+            Your radar feed
+          </h3>
+        </div>
+        <span className="rounded-full border border-teal-200/80 bg-white/70 px-2.5 py-1 font-mono text-[10px] text-teal-800">
+          Illustrative data
+        </span>
+      </div>
+
+      <div role="group" aria-label="Filter opportunities" className="mt-4 flex flex-wrap gap-1.5">
+        {FILTERS.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            aria-pressed={f.id === filter}
+            onClick={() => setFilter(f.id)}
+            className={`h-8 rounded-full px-3.5 font-mono text-[11px] font-bold transition-all ${
+              f.id === filter
+                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs'
+                : 'border border-teal-200/60 bg-white/80 text-teal-800 hover:bg-white'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-4 space-y-2.5">
+        {items.map((o) => (
+          <MatchRow key={o.title} tone={o.tone} title={o.title} meta={o.meta} match={o.match} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Showcase                                                                  */
+/* -------------------------------------------------------------------------- */
 
 const STACK = [
   'React 19',
@@ -99,115 +357,33 @@ const STACK = [
   'Vercel',
 ] as const
 
-/* -------------------------------------------------------------------------- */
-/*  Pieces                                                                    */
-/* -------------------------------------------------------------------------- */
-
-/** The QADAM mark: a Q whose ring rises into an upward arrow. */
-function QadamMark({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="6 7.5 54 54"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d="M34.18,15.68 A20,20 0 1 0 49.0,35.0 L49.0,14" />
-      <path d="M41.0,22 L49.0,14 L57.0,22" />
-      <path d="M38 45 L47 54" />
-    </svg>
-  )
-}
-
-function RadarDemo() {
-  const [filter, setFilter] = useState<Kind>('all')
-  const items = FEED.filter((o) => filter === 'all' || o.kind === filter)
-
-  return (
-    <section
-      aria-labelledby="qadam-radar-title"
-      className="rounded-2xl border border-[#1B2440]/10 bg-white p-4 shadow-[0_18px_50px_rgba(27,36,64,0.08)] sm:p-6"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-[#8A6A2E]">Try it</p>
-          <h3 id="qadam-radar-title" className="mt-1 text-xl font-bold tracking-tight text-[#1B2440] sm:text-2xl">
-            Your radar feed
-          </h3>
-        </div>
-        <span className="rounded-full border border-[#1B2440]/15 px-2.5 py-1 font-mono text-[10px] text-slate-500">
-          Illustrative data
-        </span>
-      </div>
-
-      <div role="group" aria-label="Filter opportunities" className="mt-4 flex flex-wrap gap-1.5">
-        {FILTERS.map((f) => {
-          const active = f.id === filter
-          return (
-            <button
-              key={f.id}
-              type="button"
-              aria-pressed={active}
-              onClick={() => setFilter(f.id)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${
-                active
-                  ? 'border-[#1B2440] bg-[#1B2440] text-[#F7F4EE]'
-                  : 'border-[#1B2440]/15 bg-[#F7F4EE] text-[#1B2440] hover:border-[#1B2440]/40'
-              }`}
-            >
-              {f.label}
-            </button>
-          )
-        })}
-      </div>
-
-      <ul className="mt-4 flex flex-col gap-2.5">
-        {items.map((o) => (
-          <li
-            key={o.title}
-            className="flex items-center gap-3 rounded-xl border border-[#1B2440]/10 bg-[#F7F4EE]/60 p-3 sm:gap-4 sm:p-4"
-          >
-            <div className="flex size-12 shrink-0 flex-col items-center justify-center rounded-lg bg-[#1B2440] text-[#F7F4EE] sm:size-14">
-              <span className="text-base font-bold leading-none sm:text-lg">{o.fit}%</span>
-              <span className="mt-0.5 font-mono text-[8px] uppercase tracking-wider text-[#C9A25E]">fit</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-[#1B2440] sm:text-[15px]">{o.title}</p>
-              <p className="truncate text-xs text-slate-500">{o.host}</p>
-              <p className="mt-1 truncate text-xs text-[#8A6A2E]">{o.note}</p>
-            </div>
-            <span className="hidden shrink-0 rounded-md border border-[#1B2440]/15 px-2 py-1 font-mono text-[10px] uppercase text-slate-500 sm:inline">
-              {o.kind}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Showcase                                                                  */
-/* -------------------------------------------------------------------------- */
-
-/**
- * QADAM Hub, the second project in the laptop story. A light, self-contained product page in
- * the startup's own palette (navy, ivory, gold) that expands from the laptop display the same
- * way the Voyage AI dashboard does.
- */
 export function QadamShowcase() {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const pillarsRef = useRef<HTMLDivElement>(null)
+
+  // Scroll the panel's own pane: scrollIntoView would also scroll the page and close the panel.
+  const showPillars = () => {
+    const pane = scrollRef.current
+    const target = pillarsRef.current
+    if (!pane || !target) return
+    const top = target.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop - 16
+    pane.scrollTo({ top, behavior: 'smooth' })
+  }
+
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-[#1B2440]/15 bg-[#F7F4EE] text-[#1B2440] shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
-      {/* Top bar */}
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[#1B2440]/10 bg-white px-3 py-2.5 sm:px-6">
+    <div className="qadam-ui relative isolate flex h-full w-full flex-col overflow-hidden rounded-2xl border border-teal-500/20 bg-[#0B101E] font-sans text-slate-100 antialiased shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
+      <QadamAmbient />
+
+      {/* Top bar, as on the live site */}
+      <header className="relative z-10 flex shrink-0 items-center justify-between gap-2 border-b border-teal-500/20 bg-slate-900/60 px-3 py-3 sm:px-6">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <QadamMark className="size-6 shrink-0 text-[#1B2440] sm:size-7" />
-          <span className="truncate text-sm font-bold tracking-tight sm:text-base">QADAM Hub</span>
-          <span className="whitespace-nowrap rounded-full border border-[#C9A25E]/60 bg-[#C9A25E]/15 px-2 py-0.5 font-mono text-[10px] font-semibold text-[#8A6A2E]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/qadam/qadam-icon.png" alt="" width={32} height={32} className="size-7 rounded-md object-contain sm:size-8" />
+          <span className="font-mono text-[17px] font-bold tracking-tight text-white sm:text-[19px]">QADAM</span>
+          <span className="hidden rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-teal-300 sm:inline">
+            «Қадам»
+          </span>
+          <span className="whitespace-nowrap rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-amber-300">
             LIVE BETA
           </span>
         </div>
@@ -215,128 +391,88 @@ export function QadamShowcase() {
           href={qadamLinks.site}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#1B2440] px-3 py-1.5 text-xs font-semibold text-[#F7F4EE] transition hover:bg-[#283459]"
+          className={`${GRADIENT_BUTTON} flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 font-mono text-[11px] font-semibold sm:h-10 sm:px-5`}
         >
           <span className="hidden sm:inline">Open live site</span>
           <span className="sm:hidden">Live site</span>
-          <ExternalLink className="size-3" aria-hidden="true" />
+          <ChevronRightIcon size={13} />
         </a>
-      </div>
+      </header>
 
-      {/* Scrollable body */}
       <div
+        ref={scrollRef}
         data-lenis-prevent="true"
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto px-3 py-4 sm:px-8 sm:py-8 lg:px-12"
+        className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto"
       >
-        <div className="mx-auto flex max-w-5xl flex-col gap-8 sm:gap-10">
-          {/* Hero */}
-          <div className="rounded-2xl border border-[#1B2440]/10 bg-white px-4 py-6 text-center shadow-[0_20px_60px_rgba(27,36,64,0.08)] sm:rounded-3xl sm:p-12">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#8A6A2E] sm:text-xs">
-              AI opportunity hub · student startup
-            </p>
-            <h2 className="mt-3 text-[28px] font-extrabold leading-[1.1] tracking-tight sm:mt-4 sm:text-5xl lg:text-6xl">
-              QADAM Hub.
-              <br />
-              <span className="text-[#C9A25E]">Take your first step.</span>
+        {/* Hero: the welcome screen of the live site */}
+        <section className="relative flex min-h-full flex-col items-center justify-center px-4 pt-10 pb-20 text-center sm:px-6">
+          <div className="flex flex-col items-center space-y-6 sm:space-y-8">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-teal-400/30 bg-teal-500/10 px-5 py-2 text-sm font-semibold text-teal-300 shadow-lg md:text-base">
+              <span className="size-2.5 animate-pulse rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
+              <span>AI Opportunity Hub</span>
+            </div>
+            <h2 className="text-6xl font-black leading-none tracking-tight text-white drop-shadow-[0_4px_28px_rgba(16,185,129,0.28)] sm:text-7xl md:text-8xl lg:text-[7.5rem]">
+              QADAM
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-[13px] leading-relaxed text-slate-600 sm:text-base">
-              QADAM (Қадам) means &ldquo;step&rdquo; in Kazakh. It finds grants, hackathons, internships and AI
-              programs a student is actually eligible for, shows what is missing in their CV, and sends the
-              deadlines to Telegram, Discord and KakaoTalk.
+            <p className="mx-auto max-w-2xl text-base leading-relaxed text-teal-100/90 sm:text-xl md:text-2xl">
+              QADAM («Қадам») means &quot;step&quot; in Kazakh. Your direct platform for global academic grants,
+              internships, and AI opportunities.
             </p>
-            <div className="mt-5 flex flex-col items-center justify-center gap-2 sm:mt-6 sm:flex-row sm:gap-3">
+            <div className="flex w-full flex-col items-center justify-center gap-3 pt-2 sm:flex-row">
               <a
                 href={qadamLinks.site}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1B2440] px-6 py-3 text-sm font-semibold text-[#F7F4EE] transition hover:bg-[#283459] sm:w-auto"
+                className={`${GRADIENT_BUTTON} flex min-h-[48px] w-full items-center justify-center gap-3 rounded-xl px-8 py-3.5 font-mono text-base font-semibold shadow-xl shadow-emerald-500/25 active:scale-[0.98] sm:w-auto sm:px-10 sm:text-lg`}
               >
-                Open QADAM Hub <ArrowRight className="size-4" aria-hidden="true" />
+                <span>Open QADAM</span>
+                <ChevronRightIcon size={18} />
               </a>
-              <a
-                href="#qadam-pillars"
-                onClick={(e) => {
-                  e.preventDefault()
-                  document.getElementById('qadam-pillars')?.scrollIntoView({ behavior: 'smooth' })
-                }}
-                className="inline-flex w-full items-center justify-center rounded-xl border border-[#1B2440]/25 bg-white px-6 py-3 text-sm font-semibold text-[#1B2440] transition hover:border-[#1B2440]/60 sm:w-auto"
+              <button
+                type="button"
+                onClick={showPillars}
+                className="flex min-h-[48px] w-full items-center justify-center rounded-xl border border-teal-400/30 bg-teal-500/10 px-8 py-3.5 font-mono text-base font-semibold text-teal-200 transition-colors hover:border-teal-300/60 hover:bg-teal-500/15 sm:w-auto sm:text-lg"
               >
                 How it works
-              </a>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-10 sm:grid-cols-4 sm:gap-3">
-              {STATS.map(([value, label]) => (
-                <div key={label} className="rounded-xl border border-[#1B2440]/10 bg-[#F7F4EE]/70 p-3 sm:p-4">
-                  <div className="text-xl font-extrabold sm:text-3xl">{value}</div>
-                  <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-500 sm:text-[10px]">
-                    {label}
-                  </div>
-                </div>
-              ))}
+              </button>
             </div>
           </div>
 
-          {/* Pillars */}
-          <section id="qadam-pillars" aria-labelledby="qadam-pillars-title" className="flex scroll-mt-4 flex-col gap-4">
-            <div>
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-[#8A6A2E]">Product</p>
-              <h3 id="qadam-pillars-title" className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-                Three pillars, one first step
-              </h3>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3 md:gap-4">
-              {PILLARS.map(({ icon: Icon, label, title, body, points }) => (
-                <article
-                  key={label}
-                  className="flex flex-col gap-3 rounded-2xl border border-[#1B2440]/10 bg-white p-4 sm:p-5"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex size-8 items-center justify-center rounded-lg bg-[#1B2440] text-[#C9A25E]">
-                      <Icon className="size-4" aria-hidden="true" />
-                    </span>
-                    <p className="font-mono text-[11px] font-semibold uppercase tracking-wider">{label}</p>
-                  </div>
-                  <h4 className="text-base font-semibold sm:text-lg">{title}</h4>
-                  <p className="text-[13px] leading-relaxed text-slate-600 sm:text-sm">{body}</p>
-                  <ul className="mt-auto flex flex-col gap-1.5 border-t border-[#1B2440]/10 pt-3">
-                    {points.map((point) => (
-                      <li key={point} className="flex items-start gap-2 text-xs text-slate-700">
-                        <Check className="mt-0.5 size-3.5 shrink-0 text-[#C9A25E]" aria-hidden="true" />
-                        {point}
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
-            </div>
-          </section>
+          <button
+            type="button"
+            onClick={showPillars}
+            className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 opacity-75 transition-opacity hover:opacity-100 md:flex"
+          >
+            <span className="font-mono text-[12px] font-medium uppercase tracking-wider text-teal-300">Explore 3 Pillars</span>
+            <span className="h-6 w-1.5 animate-bounce rounded-full bg-teal-400/70" />
+          </button>
+        </section>
+
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-3 pb-8 sm:gap-8 sm:px-6 lg:px-10">
+          <div ref={pillarsRef}>
+            <PillarShowcase />
+          </div>
 
           <RadarDemo />
 
           {/* Engineering */}
-          <section aria-labelledby="qadam-stack-title" className="grid gap-4 md:grid-cols-5">
+          <section aria-labelledby="qadam-stack-title" className={`${CARD} grid gap-5 p-5 sm:p-8 md:grid-cols-5`}>
             <div className="md:col-span-3">
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-[#8A6A2E]">
-                Under the hood
-              </p>
-              <h3 id="qadam-stack-title" className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
+              <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-indigo-700">Under the hood</p>
+              <h3 id="qadam-stack-title" className="mt-1 text-2xl font-bold tracking-tight text-indigo-950 sm:text-3xl">
                 Built and shipped by a student team
               </h3>
-              <p className="mt-3 text-[13px] leading-relaxed text-slate-600 sm:text-sm">
-                I founded QADAM Hub and lead product, design and engineering: the web app, the radar pipeline
-                that merges each scan into the existing feed, the shared teammate network on Supabase and the
-                messenger bots. The brand, Discord community and launch content were made in house too.
+              <p className="mt-3 text-[14px] leading-relaxed text-slate-700">
+                I founded QADAM and lead product, design and engineering: the web app, the radar pipeline that merges
+                each scan into the existing feed, the shared teammate network on Supabase and the messenger bots. The
+                brand, Discord community and launch content were made in house too.
               </p>
             </div>
-            <div className="rounded-2xl border border-[#1B2440]/10 bg-white p-4 sm:p-5 md:col-span-2">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-slate-500">Stack</p>
+            <div className="md:col-span-2">
+              <p className="font-mono text-[11px] uppercase tracking-wider text-teal-700">Stack</p>
               <ul className="mt-3 flex flex-wrap gap-1.5">
                 {STACK.map((item) => (
-                  <li
-                    key={item}
-                    className="rounded-md border border-[#1B2440]/15 bg-[#F7F4EE] px-2 py-1 text-[11px] text-[#1B2440]"
-                  >
+                  <li key={item} className="rounded-lg border border-teal-200/80 bg-white/80 px-2.5 py-1 font-mono text-[11px] text-teal-900">
                     {item}
                   </li>
                 ))}
@@ -344,21 +480,38 @@ export function QadamShowcase() {
             </div>
           </section>
 
-          <footer className="flex flex-col items-center gap-2 border-t border-[#1B2440]/10 pt-6 pb-2 text-center text-xs text-slate-500">
-            <p className="flex items-center gap-2 font-semibold text-[#1B2440]">
-              <QadamMark className="size-4" /> QADAM Hub · AI Opportunity Hub
+          <footer className="flex flex-col items-center gap-3 border-t border-teal-500/20 pt-6 pb-2 text-center">
+            <p className="flex items-center gap-2 font-mono text-sm font-bold text-white">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/qadam/qadam-icon.png" alt="" width={20} height={20} className="size-5 rounded" />
+              QADAM · AI Opportunity Hub
             </p>
-            <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-              <a href={qadamLinks.site} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:text-[#1B2440] hover:underline">
-                Live site
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <a
+                href={qadamLinks.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[12px] text-teal-200 transition-colors hover:border-teal-300/60 hover:text-white"
+              >
+                <InstagramIcon size={15} /> @joinqadamhub
               </a>
-              <a href={qadamLinks.instagram} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:text-[#1B2440] hover:underline">
-                Instagram @joinqadamhub
+              <a
+                href={qadamLinks.tiktok}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[12px] text-teal-200 transition-colors hover:border-teal-300/60 hover:text-white"
+              >
+                <TikTokIcon size={15} /> @qadamhub
               </a>
-              <a href={qadamLinks.tiktok} target="_blank" rel="noopener noreferrer" className="underline-offset-4 hover:text-[#1B2440] hover:underline">
-                TikTok @qadamhub
+              <a
+                href={qadamLinks.site}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[12px] text-teal-200 transition-colors hover:border-teal-300/60 hover:text-white"
+              >
+                Live site <ChevronRightIcon size={12} />
               </a>
-            </p>
+            </div>
           </footer>
         </div>
       </div>

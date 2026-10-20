@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { IBM_Plex_Mono, Instrument_Sans } from 'next/font/google'
+import { Geist, IBM_Plex_Mono, Instrument_Sans, JetBrains_Mono } from 'next/font/google'
 import { AnalyticsGate, ConsentBanner } from '@/components/legal/consent'
 import { LenisProvider } from '@/components/lenis-provider'
 import './globals.css'
@@ -10,6 +10,14 @@ const mono = IBM_Plex_Mono({
   subsets: ['latin'],
   weight: ['400', '500', '600'],
   variable: '--font-code',
+  display: 'swap',
+})
+// The QADAM showcase uses the startup's own type: Geist and JetBrains Mono.
+const qadamSans = Geist({ subsets: ['latin', 'cyrillic'], variable: '--font-qadam-sans', display: 'swap' })
+const qadamMono = JetBrains_Mono({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-qadam-mono',
   display: 'swap',
 })
 
@@ -79,7 +87,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} bg-neutral-950`}>
+    <html lang="en" className={`${sans.variable} ${mono.variable} ${qadamSans.variable} ${qadamMono.variable} bg-neutral-950`}>
       <head>
         <meta name="google-site-verification" content="KPmgGOHR8PsHJk7j0fL7ttP_IwAu_gjf-6hLpbWV7KU" />
         <script

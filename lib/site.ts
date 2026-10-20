@@ -31,7 +31,7 @@ export const navItems = [
   { label: 'Profile', href: '#about' },
   { label: 'Architecture', href: '#architecture' },
   { label: 'Voyage AI', href: '#voyage' },
-  { label: 'QADAM Hub', href: '#qadam' },
+  { label: 'QADAM', href: '#qadam' },
   { label: 'Contact', href: '#contact' },
 ] as const
 

@@ -434,7 +434,7 @@ export function StoryLaptop() {
           </motion.a>
         </div>
 
-        {/* Layer 30: native project panels (Voyage AI, then QADAM Hub). Normal DOM subtrees (no portal, no CSS 3D),
+        {/* Layer 30: native project panels (Voyage AI, then QADAM). Normal DOM subtrees (no portal, no CSS 3D),
             positioned and scaled from the rAF loop above. Hidden and non-interactive until
             the laptop is open and the panel has fully expanded. */}
         <div
