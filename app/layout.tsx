@@ -1,7 +1,17 @@
 import type { Metadata, Viewport } from 'next'
+import { IBM_Plex_Mono, Instrument_Sans } from 'next/font/google'
 import { AnalyticsGate, ConsentBanner } from '@/components/legal/consent'
 import { LenisProvider } from '@/components/lenis-provider'
 import './globals.css'
+
+// Self-hosted at build time: no request to Google at runtime, so the CSP stays same-origin.
+const sans = Instrument_Sans({ subsets: ['latin'], variable: '--font-ui', display: 'swap' })
+const mono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-code',
+  display: 'swap',
+})
 
 const jsonLd = {
   '@context': 'https://schema.org',
@@ -69,15 +79,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-neutral-950">
+    <html lang="en" className={`${sans.variable} ${mono.variable} bg-neutral-950`}>
       <head>
         <meta name="google-site-verification" content="KPmgGOHR8PsHJk7j0fL7ttP_IwAu_gjf-6hLpbWV7KU" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400..700&display=swap"
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

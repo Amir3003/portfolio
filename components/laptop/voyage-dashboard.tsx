@@ -583,8 +583,8 @@ export function VoyageDashboard() {
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-teal-300/20 bg-[#050a14] text-slate-100 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
       {/* Top bar */}
-      <div className="flex shrink-0 items-center justify-between border-b border-teal-300/15 bg-[#070e1c] px-4 py-2.5 sm:px-6">
-        <div className="flex items-center gap-3">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-teal-300/15 bg-[#070e1c] px-3 py-2.5 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <div className="flex size-7 items-center justify-center rounded-lg border border-teal-400/40 bg-teal-400/10 text-xs font-bold font-mono text-teal-300 shadow-[0_0_12px_rgba(45,212,191,0.25)]">
             V
           </div>
@@ -592,12 +592,13 @@ export function VoyageDashboard() {
             Voyage<span className="text-teal-400">AI</span>
           </span>
         </div>
-        <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 font-mono text-[10px] font-semibold text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)]">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
+          <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-1 font-mono text-[10px] font-semibold text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)] sm:px-3">
             <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" aria-hidden="true" />
-            MVP PROTOTYPE · IN ACTIVE DEVELOPMENT
+            <span className="sm:hidden">MVP</span>
+            <span className="hidden sm:inline">MVP PROTOTYPE · IN ACTIVE DEVELOPMENT</span>
           </span>
-          <div className="flex items-center rounded-lg border border-teal-300/20 bg-teal-400/5 p-0.5 text-[11px] font-mono">
+          <div className="hidden items-center rounded-lg border border-teal-300/20 bg-teal-400/5 p-0.5 text-[11px] font-mono sm:flex">
             <span className="rounded bg-teal-400 px-1.5 py-0.5 font-bold text-[#050a14]">EN</span>
             <span className="px-1.5 py-0.5 text-slate-400">RU</span>
           </div>
@@ -616,23 +617,23 @@ export function VoyageDashboard() {
       {/* Scrollable body */}
       <div
         data-lenis-prevent="true"
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-8 sm:px-8 lg:px-12"
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto px-3 py-4 sm:px-8 sm:py-8 lg:px-12"
       >
-        <div className="mx-auto flex max-w-5xl flex-col gap-10">
+        <div className="mx-auto flex max-w-5xl flex-col gap-8 sm:gap-10">
           {/* Hero Banner from Screenshot 1 */}
-          <div className="relative overflow-hidden rounded-3xl border border-teal-300/20 bg-gradient-to-b from-[#0a182e]/90 via-[#071120]/95 to-[#050a14] p-8 text-center sm:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
+          <div className="relative overflow-hidden rounded-2xl border border-teal-300/20 bg-gradient-to-b from-[#0a182e]/90 via-[#071120]/95 to-[#050a14] px-4 py-6 text-center sm:rounded-3xl sm:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.6)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-500/12 via-transparent to-transparent" />
 
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span className="rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-0.5 font-mono text-[10px] uppercase tracking-wider text-teal-300">
-                AUTONOMOUS LUXURY TRAVEL · 24/7 CONCIERGE
+                <span className="hidden sm:inline">AUTONOMOUS LUXURY TRAVEL · </span>24/7 CONCIERGE
               </span>
               <span className="rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.2)]">
                 MVP STAGE · ACTIVE DEVELOPMENT
               </span>
             </div>
 
-            <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="mt-4 text-[28px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
               Voyage AI.
               <br />
               <span className="bg-gradient-to-r from-teal-200 via-cyan-300 to-sky-400 bg-clip-text text-transparent">
@@ -642,7 +643,7 @@ export function VoyageDashboard() {
               </span>
             </h1>
 
-            <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
+            <p className="mx-auto mt-4 max-w-2xl text-[13px] leading-relaxed text-slate-300 sm:text-base">
               Bespoke itinerary curation powered by Google Gemini. Direct roundtrip flights, handpicked 5-star suites,
               and transparent pricing in USD &amp; KZT with zero commission markups.{' '}
               <span className="font-semibold text-amber-300">
@@ -650,7 +651,7 @@ export function VoyageDashboard() {
               </span>
             </p>
 
-            <div className="mt-6 flex justify-center">
+            <div className="mt-5 flex justify-center sm:mt-6">
               <button
                 type="button"
                 onClick={() => curationRef.current?.scrollIntoView({ behavior: 'smooth' })}
@@ -660,28 +661,28 @@ export function VoyageDashboard() {
               </button>
             </div>
 
-            <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-4">
-                <div className="text-2xl font-bold text-white sm:text-3xl">24/7</div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-slate-400">
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:mt-10 sm:grid-cols-4 sm:gap-3">
+              <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-3 sm:p-4">
+                <div className="text-xl font-bold text-white sm:text-3xl">24/7</div>
+                <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400 sm:text-[10px]">
                   AUTONOMOUS CONCIERGE
                 </div>
               </div>
-              <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-4">
-                <div className="text-2xl font-bold text-white sm:text-3xl">50</div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-slate-400">
+              <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-3 sm:p-4">
+                <div className="text-xl font-bold text-white sm:text-3xl">50</div>
+                <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400 sm:text-[10px]">
                   ELITE WORLD RESORTS
                 </div>
               </div>
-              <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-4">
-                <div className="text-2xl font-bold text-white sm:text-3xl">10</div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-slate-400">
+              <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-3 sm:p-4">
+                <div className="text-xl font-bold text-white sm:text-3xl">10</div>
+                <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400 sm:text-[10px]">
                   TOP GLOBAL DESTINATIONS
                 </div>
               </div>
-              <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-4">
-                <div className="text-2xl font-bold text-white sm:text-3xl">0%</div>
-                <div className="mt-1 font-mono text-[10px] uppercase tracking-wider text-slate-400">
+              <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-3 sm:p-4">
+                <div className="text-xl font-bold text-white sm:text-3xl">0%</div>
+                <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400 sm:text-[10px]">
                   HIDDEN COMMISSION
                 </div>
               </div>
@@ -693,7 +694,7 @@ export function VoyageDashboard() {
             <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-amber-400">
               VOYAGE AI CONCIERGE
             </p>
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Where shall we take you?</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-4xl">Where shall we take you?</h2>
             <p className="max-w-2xl text-sm leading-relaxed text-slate-400">
               A single conversational prompt replaces tedious multi-step search engines. Voyage AI interprets your
               travel style, selects non-stop flight routes, and matches real suites.
@@ -732,7 +733,7 @@ export function VoyageDashboard() {
               ref={logRef}
               data-lenis-prevent="true"
               aria-live="polite"
-              className="flex max-h-56 min-h-28 flex-col gap-2.5 overflow-y-auto overscroll-contain pr-1"
+              className="flex max-h-56 min-h-28 flex-col gap-2.5 overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto pr-1"
             >
               {messages.map((m) => (
                 <Bubble key={m.id} message={m} />
@@ -761,12 +762,12 @@ export function VoyageDashboard() {
                 onChange={(e) => setInput(e.target.value)}
                 aria-label="Describe your trip"
                 placeholder="e.g. Solo luxury escape to Dubai from Astana for 7 nights, 5★, $3,500 budget"
-                className="min-w-0 flex-1 rounded-xl border border-teal-300/20 bg-[#08101f] px-4 py-3 text-sm text-slate-100 placeholder-slate-500 outline-none transition focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
+                className="min-w-0 flex-1 rounded-xl border border-teal-300/20 bg-[#08101f] px-4 py-3 text-base text-slate-100 sm:text-sm placeholder-slate-500 outline-none transition focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
               />
               <button
                 type="submit"
                 disabled={isPending || !input.trim()}
-                className="rounded-xl bg-teal-400 px-5 py-3 text-sm font-bold text-[#050a14] transition hover:bg-teal-300 disabled:opacity-40"
+                className="shrink-0 rounded-xl bg-teal-400 px-4 py-3 text-sm font-bold text-[#050a14] transition hover:bg-teal-300 disabled:opacity-40 sm:px-5"
               >
                 Send <span aria-hidden="true">↗</span>
               </button>
@@ -781,7 +782,7 @@ export function VoyageDashboard() {
                   <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-amber-400">
                     Bespoke Selection
                   </p>
-                  <h3 id="voyage-results-title" className="mt-1 text-3xl font-bold tracking-tight text-white">
+                  <h3 id="voyage-results-title" className="mt-1 text-2xl font-bold sm:text-3xl tracking-tight text-white">
                     Top {packages.length} Tailored Packages
                   </h3>
                 </div>
@@ -826,7 +827,7 @@ export function VoyageDashboard() {
         >
           <div
             data-lenis-prevent="true"
-            className="max-h-full w-full max-w-3xl overflow-y-auto overscroll-contain rounded-2xl border border-teal-300/25 bg-[#0b1426] shadow-[0_30px_90px_rgba(0,0,0,0.9)]"
+            className="max-h-full w-full max-w-3xl overflow-y-auto overscroll-contain pointer-coarse:overscroll-auto rounded-2xl border border-teal-300/25 bg-[#0b1426] shadow-[0_30px_90px_rgba(0,0,0,0.9)]"
           >
             {step === 'suites' ? (
               <div>

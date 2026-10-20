@@ -10,7 +10,6 @@ import {
   MathUtils,
   MeshStandardMaterial,
   PlaneGeometry,
-  SRGBColorSpace,
   Vector3,
   type Group,
 } from 'three'
@@ -19,6 +18,10 @@ import {
   createBottomChassisTexture,
   createDefaultScreenTexture,
   createKeyboardDeckTexture,
+  makeCanvas,
+  textureFonts,
+  textureScale,
+  toTexture,
 } from '@/components/laptop/laptop-textures'
 
 /* -------------------------------------------------------------------------- */
@@ -117,6 +120,8 @@ interface Pose {
   centerY: number
   /** Vertical offset as a fraction of the viewport height (negative = lower). */
   shift: number
+  /** Extra vertical offset on portrait phones, where the overlay copy needs more room. */
+  narrowShift: number
   /** Scale multiplier relative to the fitted open-laptop scale. */
   zoom: number
   /** 1 = chassis bottom pinned above the scroll cue, 0 = free centring. */
@@ -132,9 +137,9 @@ interface Key extends Pose {
 /**
  * Stages (p):
  *  0.00 - 0.06  intro, slightly ajar, pinned above the scroll cue
- *  0.06 - 0.18  lid opens upright, laptop turns around to show the outer lid
+ *  0.06 - 0.18  lid closes, laptop tilts up so the outer lid faces the camera
  *  0.18 - 0.28  hold: outer lid
- *  0.28 - 0.38  lid closes, laptop flips to show the bottom chassis
+ *  0.28 - 0.38  laptop keeps tumbling forward to show the bottom chassis
  *  0.38 - 0.50  hold: bottom chassis
  *  0.50 - 0.58  flips back upright
  *  0.58 - 0.72  lid opens, display faces the camera
@@ -142,10 +147,11 @@ interface Key extends Pose {
  *  0.94 - 0.99  lid closes
  *
  * Orientation notes:
- *  - rotY = PI shows the outer lid with the lid upright. The back cover plane is
- *    rotated PI around Y (not X) so its artwork stays right-side up.
- *  - rotX = PI + tilt shows the bottom chassis; rotY returns to TAU (identity) so
- *    the bottom artwork is not mirrored.
+ *  - The laptop only ever tumbles forward around X, so there is no sideways spin.
+ *  - rotX = PI / 2 shows the closed outer lid with the hinge at the top. The back cover
+ *    artwork is turned 180 degrees in-plane so it reads right-side up in this view and
+ *    in the ajar intro pose.
+ *  - rotX = PI + tilt shows the bottom chassis.
  */
 const REST: Key = {
   p: 0,
@@ -154,18 +160,20 @@ const REST: Key = {
   rotY: 0,
   centerY: 0,
   shift: 0,
+  narrowShift: 0,
   zoom: 1,
   anchor: 1,
   glow: 0,
 }
 
 const LID_VIEW: Omit<Key, 'p'> = {
-  alpha: Math.PI / 2,
-  rotX: 0.1,
-  rotY: Math.PI,
-  centerY: 1.15,
-  shift: -0.12,
-  zoom: 1,
+  alpha: 0,
+  rotX: Math.PI / 2 - 0.16,
+  rotY: 0,
+  centerY: 0,
+  shift: -0.16,
+  narrowShift: -0.06,
+  zoom: 1.12,
   anchor: 0,
   glow: 0,
 }
@@ -173,9 +181,10 @@ const LID_VIEW: Omit<Key, 'p'> = {
 const BOTTOM_VIEW: Omit<Key, 'p'> = {
   alpha: 0,
   rotX: Math.PI + 0.95,
-  rotY: TAU,
+  rotY: 0,
   centerY: 0,
   shift: -0.22,
+  narrowShift: -0.12,
   zoom: 1,
   anchor: 0,
   glow: 0,
@@ -184,9 +193,10 @@ const BOTTOM_VIEW: Omit<Key, 'p'> = {
 const OPEN_VIEW: Omit<Key, 'p'> = {
   alpha: OPEN_ALPHA,
   rotX: TAU + OPEN_TILT,
-  rotY: TAU,
+  rotY: 0,
   centerY: 1.0,
   shift: 0,
+  narrowShift: 0,
   zoom: 1.15,
   anchor: 0,
   glow: 1,
@@ -202,9 +212,10 @@ const KEYS: readonly Key[] = [
   {
     alpha: 0,
     rotX: TAU + 0.3,
-    rotY: TAU,
+    rotY: 0,
     centerY: 0.05,
     shift: 0,
+    narrowShift: 0,
     zoom: 1.1,
     anchor: 0,
     glow: 0,
@@ -215,9 +226,10 @@ const KEYS: readonly Key[] = [
   {
     alpha: 0,
     rotX: TAU + 0.45,
-    rotY: TAU,
+    rotY: 0,
     centerY: 0.1,
     shift: 0.04,
+    narrowShift: 0,
     zoom: 1,
     anchor: 0,
     glow: 0,
@@ -226,9 +238,10 @@ const KEYS: readonly Key[] = [
   {
     alpha: 0,
     rotX: TAU + 0.45,
-    rotY: TAU,
+    rotY: 0,
     centerY: 0.1,
     shift: 0.04,
+    narrowShift: 0,
     zoom: 1,
     anchor: 0,
     glow: 0,
@@ -247,6 +260,7 @@ function mixPose(a: Key, b: Key, p: number): Pose {
     rotY: MathUtils.lerp(a.rotY, b.rotY, t),
     centerY: MathUtils.lerp(a.centerY, b.centerY, t),
     shift: MathUtils.lerp(a.shift, b.shift, t),
+    narrowShift: MathUtils.lerp(a.narrowShift, b.narrowShift, t),
     zoom: MathUtils.lerp(a.zoom, b.zoom, t),
     anchor: MathUtils.lerp(a.anchor, b.anchor, t),
     glow: MathUtils.lerp(a.glow, b.glow, t),
@@ -274,15 +288,9 @@ function samplePose(progress: number): Pose {
 function createLidBrandTexture(anisotropy: number): CanvasTexture {
   const w = 2048
   const h = Math.round((w * (LH - 0.16)) / (W - 0.16))
-  const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
-  const texture = new CanvasTexture(canvas)
-  texture.colorSpace = SRGBColorSpace
-  texture.anisotropy = anisotropy
-
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return texture
+  // 2560 px wide on desktop, about 1830 px on phones.
+  const [, ctx, canvas] = makeCanvas(w, h, textureScale() / 1.4)
+  const { sans: SANS, mono: MONO } = textureFonts()
 
   const base = ctx.createLinearGradient(0, 0, w, h)
   base.addColorStop(0, '#0d0f12')
@@ -306,13 +314,13 @@ function createLidBrandTexture(anisotropy: number): CanvasTexture {
   ctx.roundRect(ex - es / 2, ey - es / 2, es, es, 44)
   ctx.stroke()
   ctx.fillStyle = '#a3e635'
-  ctx.font = '700 104px ui-monospace, SFMono-Regular, Menlo, monospace'
+  ctx.font = `700 104px ${MONO}`
   ctx.fillText('AN', ex, ey + 6)
 
   // Name on a single line: shrink the font until it fits.
   const name = 'Amir Nagiyev'
   let size = 190
-  const sans = (px: number) => `600 ${px}px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif`
+  const sans = (px: number) => `600 ${px}px ${SANS}`
   ctx.font = sans(size)
   while (ctx.measureText(name).width > w * 0.78 && size > 80) {
     size -= 4
@@ -322,18 +330,17 @@ function createLidBrandTexture(anisotropy: number): CanvasTexture {
   ctx.fillText(name, w / 2, h * 0.57)
 
   ctx.fillStyle = '#a3a3a3'
-  ctx.font = '500 70px ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif'
+  ctx.font = `500 70px ${SANS}`
   ctx.fillText('17-year-old AI & ML Engineer', w / 2, h * 0.72)
 
   ctx.fillStyle = '#a3e635'
   ctx.fillRect(w / 2 - 90, h * 0.8, 180, 5)
 
   ctx.fillStyle = '#737373'
-  ctx.font = '500 46px ui-monospace, SFMono-Regular, Menlo, monospace'
+  ctx.font = `500 46px ${MONO}`
   ctx.fillText('Astana, Kazakhstan', w / 2, h * 0.87)
 
-  texture.needsUpdate = true
-  return texture
+  return toTexture(canvas, anisotropy)
 }
 
 /* -------------------------------------------------------------------------- */
@@ -488,11 +495,19 @@ function LaptopMesh({ progress, bottomInsetRef, screenRectRef }: LaptopMeshProps
 
     // Fitted scale: ajar scale while anchored, open scale afterwards.
     const openScale = fitScale(OPEN_EXTENT, viewH, viewW) * pose.zoom
-    const introScale = fitScale(INTRO_EXTENT, viewH, viewW)
+    // The front edge of the ajar pose is much closer to the camera than the hinge, so also cap
+    // the scale so that the perspective-enlarged front edge stays within the viewport width.
+    const introEdgeZ = (D / 2) * Math.cos(INTRO_TILT) - BH * Math.sin(INTRO_TILT)
+    const halfLimit = (MAX_WIDTH_SHARE * viewW) / 2
+    const introPerspectiveCap = (halfLimit * CAM_Z) / ((W / 2) * CAM_Z + halfLimit * introEdgeZ)
+    const introScale = Math.min(fitScale(INTRO_EXTENT, viewH, viewW), introPerspectiveCap)
     const scale = MathUtils.lerp(openScale, introScale, pose.anchor)
 
-    // Free centring for the story stages.
-    const yFree = pose.shift * viewH - pose.centerY * scale
+    // Free centring for the story stages. Portrait phones (aspect 0.75 and below) blend in the
+    // extra offset so the laptop sits under the overlay copy instead of behind it.
+    const narrow = MathUtils.clamp((1 - aspect) / 0.25, 0, 1)
+    const shift = pose.shift + pose.narrowShift * narrow
+    const yFree = shift * viewH - pose.centerY * scale
 
     // Anchored Y: solve the pinhole projection so the front bottom edge of the chassis
     // lands exactly `bottomInsetRef.current` px above the viewport bottom.
@@ -591,14 +606,14 @@ function LaptopMesh({ progress, bottomInsetRef, screenRectRef }: LaptopMeshProps
         <group ref={hingePivot} position={[0, 0, -D / 2]}>
           <mesh geometry={g.lidChassis} material={m.aluminum} position={[0, LH / 2, -LT / 2]} />
 
-          {/* Outer back cover (faces -Z in lid space).
-              Rotated PI around Y, not X: a rotation around X flips the artwork
-              upside down whenever the lid is upright, which was the inversion bug. */}
+          {/* Outer back cover (faces -Z in lid space). Turned PI around Y to face outwards,
+              then PI in-plane so the artwork reads right-side up whenever the closed lid
+              faces the camera (intro and outer lid stages). */}
           <mesh
             geometry={g.lidBackPlane}
             material={m.backCover}
             position={[0, LH / 2, -LT - 0.002]}
-            rotation={[0, Math.PI, 0]}
+            rotation={[0, Math.PI, Math.PI]}
           />
 
           {/* Inner display (faces +Z). The interactive dashboard is a native DOM layer
@@ -624,6 +639,33 @@ function ContextGuard({ onLost }: { onLost: () => void }) {
   return null
 }
 
+/** Device pixel ratio range; a slow GPU drops to the lower range, never below 1. */
+const DPR_HIGH: [number, number] = [1, 2]
+const DPR_LOW: [number, number] = [1, 1.5]
+
+/**
+ * The procedural textures draw text with the site fonts, so wait for them (with a short
+ * timeout) instead of baking the system fallback into the artwork.
+ */
+function useFontsReady(): boolean {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    let done = false
+    const finish = () => {
+      if (done) return
+      done = true
+      setReady(true)
+    }
+    const timer = window.setTimeout(finish, 1500)
+    document.fonts.ready.then(finish, finish)
+    return () => {
+      done = true
+      window.clearTimeout(timer)
+    }
+  }, [])
+  return ready
+}
+
 export default function LaptopScene({
   progress,
   active,
@@ -631,7 +673,8 @@ export default function LaptopScene({
   bottomInsetRef,
   screenRectRef,
 }: LaptopSceneProps) {
-  const [dpr, setDpr] = useState<[number, number]>([1, 1.75])
+  const [dpr, setDpr] = useState<[number, number]>(DPR_HIGH)
+  const fontsReady = useFontsReady()
 
   return (
     <Canvas
@@ -642,18 +685,20 @@ export default function LaptopScene({
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false }}
       className="pointer-events-none"
     >
-      <PerformanceMonitor onDecline={() => setDpr([0.75, 1])} onIncline={() => setDpr([1, 1.75])} />
+      <PerformanceMonitor onDecline={() => setDpr(DPR_LOW)} onIncline={() => setDpr(DPR_HIGH)} />
       <ContextGuard onLost={onContextLost} />
       <ambientLight intensity={0.9} />
       <directionalLight position={[4, 5, 5]} intensity={1.8} color="#ffffff" />
       <directionalLight position={[-4, 3, -4]} intensity={0.9} color="#cbd5e1" />
       <pointLight position={[-3, 1, 2.5]} intensity={16} distance={12} decay={2} color="#2dd4bf" />
       <pointLight position={[3.5, -1, 3]} intensity={14} distance={12} decay={2} color="#ffffff" />
-      <LaptopMesh
-        progress={progress}
-        bottomInsetRef={bottomInsetRef}
-        screenRectRef={screenRectRef}
-      />
+      {fontsReady && (
+        <LaptopMesh
+          progress={progress}
+          bottomInsetRef={bottomInsetRef}
+          screenRectRef={screenRectRef}
+        />
+      )}
     </Canvas>
   )
 }

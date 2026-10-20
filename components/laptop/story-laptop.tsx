@@ -31,11 +31,16 @@ const GRID_PX = 48
 const GAP_CELLS = 1.5
 
 /** Expanded dashboard geometry (CSS px). Leaves the header and a scroll band clear. */
-const PANEL_GUTTER = 16
 const PANEL_MAX_WIDTH = 1440
-const PANEL_TOP_CLEAR = 84
-const PANEL_BOTTOM_BAND = 72
 const PANEL_MIN_HEIGHT = 360
+/** Below this viewport width the panel uses the tighter phone geometry. */
+const PANEL_NARROW = 640
+
+function panelGeometry(vw: number) {
+  return vw < PANEL_NARROW
+    ? { gutter: 8, topClear: 60, bottomBand: 48 }
+    : { gutter: 16, topClear: 84, bottomBand: 72 }
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Timeline helpers (progress 0 to 1 over the sticky section)                */
@@ -113,14 +118,14 @@ function SpecSheet({ id }: { id?: string }) {
   return (
     <div
       id={id}
-      className="grid w-full grid-cols-1 divide-y divide-neutral-800 border-y border-neutral-700 bg-neutral-950 text-left md:grid-cols-3 md:divide-x md:divide-y-0"
+      className="grid w-full grid-cols-1 divide-y divide-neutral-800 border-y border-neutral-700 bg-neutral-950/95 text-left md:grid-cols-3 md:divide-x md:divide-y-0"
     >
       {COLUMNS.map((c) => (
-        <section key={c.label} className="flex flex-col gap-2 p-4 sm:p-6">
-          <p className="font-mono text-xs text-lime-400">{c.label}</p>
-          <h3 className="text-base font-medium text-neutral-50 sm:text-lg">{c.title}</h3>
-          <p className="text-sm leading-relaxed text-neutral-300 sm:text-[15px]">{c.body}</p>
-          <p className="mt-auto pt-2 font-mono text-xs text-neutral-500">{c.tags}</p>
+        <section key={c.label} className="flex flex-col gap-1 px-4 py-3 sm:gap-2 sm:p-6">
+          <p className="font-mono text-[11px] text-lime-400 sm:text-xs">{c.label}</p>
+          <h3 className="text-[15px] font-medium text-neutral-50 sm:text-lg">{c.title}</h3>
+          <p className="text-[13px] leading-snug text-neutral-300 sm:text-[15px] sm:leading-relaxed">{c.body}</p>
+          <p className="mt-auto pt-1 font-mono text-[11px] text-neutral-500 sm:pt-2 sm:text-xs">{c.tags}</p>
         </section>
       ))}
     </div>
@@ -140,6 +145,8 @@ export function StoryLaptop() {
   const screenRectRef = useRef<ScreenRect>({ x: 0, y: 0, w: 0, h: 0, valid: false })
 
   const [hasWebGL, setHasWebGL] = useState(true)
+  /** True while the pinned section is on screen; the WebGL and DOM loops idle otherwise. */
+  const [inView, setInView] = useState(true)
   const [reducedMotion, setReducedMotion] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -156,6 +163,16 @@ export function StoryLaptop() {
   const handleContextLost = useCallback(() => setHasWebGL(false), [])
 
   const useFallback = reducedMotion || !hasWebGL
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (useFallback || !el || typeof IntersectionObserver === 'undefined') return
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting), {
+      rootMargin: '200px 0px',
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [useFallback])
 
   // Keep the chassis exactly 1.5 grid cells above the top edge of the scroll cue.
   useEffect(() => {
@@ -185,7 +202,7 @@ export function StoryLaptop() {
   // and expands to a full-width, fully interactive panel. Everything is written straight to
   // the element style from one rAF loop, so React never re-renders while scrolling.
   useEffect(() => {
-    if (useFallback) return
+    if (useFallback || !inView) return
     const panel = panelRef.current
     const hint = hintRef.current
     if (!panel) return
@@ -221,10 +238,11 @@ export function StoryLaptop() {
       const vh = viewport.clientHeight
 
       // Final (expanded) box.
-      const fw = Math.min(vw - PANEL_GUTTER * 2, PANEL_MAX_WIDTH)
-      const fh = Math.max(PANEL_MIN_HEIGHT, vh - PANEL_TOP_CLEAR - PANEL_BOTTOM_BAND)
+      const { gutter, topClear, bottomBand } = panelGeometry(vw)
+      const fw = Math.min(vw - gutter * 2, PANEL_MAX_WIDTH)
+      const fh = Math.max(PANEL_MIN_HEIGHT, vh - topClear - bottomBand)
       const fx = (vw - fw) / 2
-      const fy = PANEL_TOP_CLEAR
+      const fy = topClear
 
       // Uniform scale that covers the laptop display, cropped to the display rectangle.
       const s0 = Math.max(rect.w / fw, rect.h / fh)
@@ -259,7 +277,7 @@ export function StoryLaptop() {
       cancelAnimationFrame(raf)
       hide()
     }
-  }, [useFallback, progress])
+  }, [useFallback, inView, progress])
 
   // Initial scroll cue.
   const scrollCueOpacity = useTransform(progress, [0, 0.06, 0.1], [1, 0.6, 0])
@@ -334,7 +352,7 @@ export function StoryLaptop() {
           >
             <LaptopScene
               progress={progress}
-              active
+              active={inView}
               onContextLost={handleContextLost}
               bottomInsetRef={bottomInsetRef}
               screenRectRef={screenRectRef}
@@ -357,7 +375,7 @@ export function StoryLaptop() {
           {/* Stage 1: outer lid and profile */}
           <motion.div
             style={{ opacity: stage1Opacity, y: stage1Y, pointerEvents: stage1Events }}
-            className="absolute inset-x-4 top-[17vh] mx-auto flex max-w-3xl flex-col items-center gap-3 text-center sm:top-[19vh]"
+            className="absolute inset-x-4 top-[13vh] mx-auto flex max-w-3xl flex-col items-center gap-3 text-center sm:top-[19vh]"
           >
             <p className="font-mono text-xs text-lime-400">Profile</p>
             <h1 className="text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl md:text-4xl">
@@ -375,9 +393,9 @@ export function StoryLaptop() {
           {/* Stage 2 and 3: bottom chassis and architecture */}
           <motion.div
             style={{ opacity: stage2Opacity, y: stage2Y, pointerEvents: stage2Events }}
-            className="absolute inset-x-4 top-[17vh] mx-auto flex w-full max-w-6xl flex-col items-center gap-4 sm:top-[19vh]"
+            className="absolute inset-x-4 top-[11vh] mx-auto flex max-w-6xl flex-col items-center gap-3 sm:top-[19vh] sm:gap-4"
           >
-            <h2 className="text-center text-2xl font-semibold tracking-tight text-neutral-100 sm:text-3xl">
+            <h2 className="text-balance text-center text-xl font-semibold tracking-tight text-neutral-100 sm:text-3xl">
               Physical rigor, system architecture
             </h2>
             <SpecSheet />
@@ -413,7 +431,8 @@ export function StoryLaptop() {
           className="pointer-events-none absolute inset-x-0 bottom-5 z-30 text-center font-mono text-[11px] text-neutral-400"
           style={{ opacity: 0 }}
         >
-          Scroll here, outside the panel, to continue
+          <span className="pointer-coarse:hidden">Scroll here, outside the panel, to continue</span>
+          <span className="hidden pointer-coarse:inline">Swipe here to continue</span>
         </div>
       </div>
     </div>

@@ -1,25 +1,69 @@
 import { CanvasTexture, SRGBColorSpace } from 'three'
 
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
-const SANS = 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
 const LIME = '#a3e635'
 const CYAN = '#2dd4bf'
 const AMBER = '#fbbf24'
 const MUTED = 'rgba(255, 255, 255, 0.45)'
 
-function makeCanvas(width: number, height: number): [HTMLCanvasElement, CanvasRenderingContext2D] {
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) throw new Error('2D canvas context unavailable')
-  return [canvas, ctx]
+/** Reads a font stack from a CSS custom property set by next/font, with a system fallback. */
+function cssFont(variable: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback
+  const family = getComputedStyle(document.documentElement).getPropertyValue(variable).trim()
+  return family ? `${family}, ${fallback}` : fallback
 }
 
-function toTexture(canvas: HTMLCanvasElement, maxAnisotropy: number): CanvasTexture {
+/** Site fonts for canvas artwork, resolved when a texture is drawn (after fonts have loaded). */
+export function textureFonts(): { sans: string; mono: string } {
+  return {
+    sans: cssFont('--font-ui', 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'),
+    mono: cssFont('--font-code', 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'),
+  }
+}
+
+let SANS = textureFonts().sans
+let MONO = textureFonts().mono
+
+/**
+ * Supersampling factor for the procedural artwork. The drawing code works in logical units;
+ * the backing canvas is this many times larger so text and fine lines stay crisp on high-DPI
+ * displays. Lower on small screens to keep GPU memory in check.
+ */
+export function textureScale(): number {
+  if (typeof window === 'undefined') return 1
+  const shortSide = Math.min(window.screen.width, window.screen.height)
+  return shortSide < 768 ? 1.25 : 1.75
+}
+
+/** Logical drawing size; the real canvas is `scale` times larger. */
+interface Surface {
+  width: number
+  height: number
+}
+
+export function makeCanvas(
+  width: number,
+  height: number,
+  scale: number,
+): [Surface, CanvasRenderingContext2D, HTMLCanvasElement] {
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(width * scale)
+  canvas.height = Math.round(height * scale)
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('2D canvas context unavailable')
+  ctx.scale(canvas.width / width, canvas.height / height)
+  ctx.imageSmoothingQuality = 'high'
+  // Refresh the font stacks per texture so they pick up fonts that finished loading.
+  const fonts = textureFonts()
+  SANS = fonts.sans
+  MONO = fonts.mono
+  return [{ width, height }, ctx, canvas]
+}
+
+export function toTexture(canvas: HTMLCanvasElement, maxAnisotropy: number): CanvasTexture {
   const texture = new CanvasTexture(canvas)
   texture.colorSpace = SRGBColorSpace
-  texture.anisotropy = Math.min(4, maxAnisotropy)
+  // Strong anisotropic filtering keeps the artwork sharp at the steep angles of the flips.
+  texture.anisotropy = Math.min(16, maxAnisotropy)
   texture.needsUpdate = true
   return texture
 }
@@ -28,8 +72,8 @@ function toTexture(canvas: HTMLCanvasElement, maxAnisotropy: number): CanvasText
  * Procedural laptop lid texture: Sleek dark matte aluminum with minimalist AN laser engraving
  * and profile identification: "17-year-old AI & ML Engineer Amir Nagiyev".
  */
-export function createLidTexture(maxAnisotropy: number): CanvasTexture {
-  const [c, ctx] = makeCanvas(1400, 920)
+export function createLidTexture(maxAnisotropy: number, scale = textureScale()): CanvasTexture {
+  const [c, ctx, canvas] = makeCanvas(1400, 920, scale)
 
   // Dark matte metallic finish
   ctx.fillStyle = '#0d0d10'
@@ -68,15 +112,15 @@ export function createLidTexture(maxAnisotropy: number): CanvasTexture {
   ctx.font = `600 15px ${MONO}`
   ctx.fillText('MODEL 01 · TENSOR CORES & ZERO-ALLOC PIPELINES', cx, c.height - 54)
 
-  return toTexture(c, maxAnisotropy)
+  return toTexture(canvas, maxAnisotropy)
 }
 
 /**
  * Bottom chassis deck texture: Realistic ventilation grates, Torx screw markings,
  * rubber foot alignments, and laser-engraved regulatory hardware specifications.
  */
-export function createBottomChassisTexture(maxAnisotropy: number): CanvasTexture {
-  const [c, ctx] = makeCanvas(1400, 920)
+export function createBottomChassisTexture(maxAnisotropy: number, scale = textureScale()): CanvasTexture {
+  const [c, ctx, canvas] = makeCanvas(1400, 920, scale)
 
   // Dark anodized bottom plate finish
   ctx.fillStyle = '#0b0b0e'
@@ -186,14 +230,14 @@ export function createBottomChassisTexture(maxAnisotropy: number): CanvasTexture
   ctx.font = `500 14px ${MONO}`
   ctx.fillText('THERMAL REGIME: PASSIVE DUAL HEATPIPE + LOW-NOISE TURBINE', blockX, c.height - 110)
 
-  return toTexture(c, maxAnisotropy)
+  return toTexture(canvas, maxAnisotropy)
 }
 
 /**
  * Keyboard deck texture: Precision dark chiclet keys, trackpad, and speaker grilles.
  */
-export function createKeyboardDeckTexture(maxAnisotropy: number): CanvasTexture {
-  const [c, ctx] = makeCanvas(1400, 900)
+export function createKeyboardDeckTexture(maxAnisotropy: number, scale = textureScale()): CanvasTexture {
+  const [c, ctx, canvas] = makeCanvas(1400, 900, scale)
 
   // Deck surface
   ctx.fillStyle = '#111114'
@@ -268,7 +312,7 @@ export function createKeyboardDeckTexture(maxAnisotropy: number): CanvasTexture 
     }
   }
 
-  return toTexture(c, maxAnisotropy)
+  return toTexture(canvas, maxAnisotropy)
 }
 
 /**
@@ -276,8 +320,8 @@ export function createKeyboardDeckTexture(maxAnisotropy: number): CanvasTexture 
  * package on the right), drawn with the same palette and layout as the DOM dashboard that
  * expands from the laptop display, so the hand-off between the two is seamless.
  */
-export function createDefaultScreenTexture(maxAnisotropy: number): CanvasTexture {
-  const [c, ctx] = makeCanvas(1600, 1000)
+export function createDefaultScreenTexture(maxAnisotropy: number, scale = textureScale()): CanvasTexture {
+  const [c, ctx, canvas] = makeCanvas(1600, 1000, scale)
   const W = c.width
   const H = c.height
 
@@ -414,5 +458,5 @@ export function createDefaultScreenTexture(maxAnisotropy: number): CanvasTexture
   text('Atlantis The Royal', rx + 24, cardTop + 448, `600 30px ${SANS}`, '#ffffff')
   text('Dubai · Palm Jumeirah', rx + rw - 24, cardTop + 446, `400 18px ${MONO}`, '#cbd5e1', 'right')
 
-  return toTexture(c, maxAnisotropy)
+  return toTexture(canvas, maxAnisotropy)
 }
