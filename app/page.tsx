@@ -6,10 +6,12 @@ import { ProjectsSection } from '@/components/projects-section'
 import { StoryLaptop } from '@/components/laptop/story-laptop'
 import { SiteHeader } from '@/components/site-header'
 import { legal } from '@/lib/legal'
+import { profilePageJsonLd } from '@/lib/seo'
 
 export default function Page() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(profilePageJsonLd()) }} />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:bg-lime-500 focus:px-3 focus:py-2 focus:text-neutral-950"

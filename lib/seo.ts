@@ -9,7 +9,8 @@ export const PERSON = {
   jobTitle: 'AI & ML Developer',
   city: 'Astana',
   country: 'Kazakhstan',
-  school: 'QAIRU',
+  school: 'Qazaq AI Research University',
+  schoolShort: 'QAIRU',
 } as const
 
 export const SITE_TITLE = 'Amir Nagiyev · AI & ML Developer · Astana'
@@ -84,7 +85,12 @@ export function personJsonLd() {
     sameAs: SAME_AS,
     email: `mailto:${PERSONAL_EMAIL}`,
     address: { '@type': 'PostalAddress', addressLocality: PERSON.city, addressCountry: PERSON.country },
-    alumniOf: { '@type': 'CollegeOrUniversity', name: PERSON.school },
+    alumniOf: {
+      '@type': 'CollegeOrUniversity',
+      name: PERSON.school,
+      alternateName: PERSON.schoolShort,
+      address: { '@type': 'PostalAddress', addressLocality: 'Astana', addressCountry: 'Kazakhstan' },
+    },
     worksFor: {
       '@type': 'Organization',
       name: 'QADAM',
@@ -108,6 +114,8 @@ export function projectJsonLd(project: ProjectSeo) {
         image: absolute(project.image),
         applicationCategory: project.category,
         operatingSystem: 'Web',
+        // Both projects are free to use.
+        offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
         sameAs: [project.externalUrl],
         author: { '@id': `${SITE_URL}/#person` },
         creator: personJsonLd(),
@@ -121,5 +129,19 @@ export function projectJsonLd(project: ProjectSeo) {
         ],
       },
     ],
+  }
+}
+
+/** Home page: Google's ProfilePage type, so the site is read as Amir Nagiyev's profile. */
+export function profilePageJsonLd() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ProfilePage',
+    '@id': `${SITE_URL}/#profile`,
+    url: `${SITE_URL}/`,
+    name: SITE_TITLE,
+    dateCreated: '2026-10-11',
+    dateModified: LAST_UPDATED,
+    mainEntity: personJsonLd(),
   }
 }

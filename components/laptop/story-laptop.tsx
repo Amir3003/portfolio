@@ -104,7 +104,7 @@ const COLUMNS: readonly Column[] = [
 
 /** Profile copy, shared by the 3D story and the static fallback. */
 const PROFILE = {
-  school: 'QAIRU AI&ML',
+  school: 'Qazaq AI Research University (QAIRU), AI & ML',
   focus:
     'Interested in systems engineering, software development and the design of autonomous AI systems.',
   reading: 'Haruki Murakami, Stephen Hawking, Michio Kaku, basketball and Japanese.',
