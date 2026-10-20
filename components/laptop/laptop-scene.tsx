@@ -14,10 +14,12 @@ import {
   type Group,
 } from 'three'
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js'
+import { POSE_KEYS, SCREEN_SWITCH, smoothstep } from '@/components/laptop/story-timeline'
 import {
   createBottomChassisTexture,
   createDefaultScreenTexture,
   createKeyboardDeckTexture,
+  createQadamScreenTexture,
   makeCanvas,
   textureFonts,
   textureScale,
@@ -135,16 +137,7 @@ interface Key extends Pose {
 }
 
 /**
- * Stages (p):
- *  0.00 - 0.06  intro, slightly ajar, pinned above the scroll cue
- *  0.06 - 0.18  lid closes, laptop tilts up so the outer lid faces the camera
- *  0.18 - 0.28  hold: outer lid
- *  0.28 - 0.38  laptop keeps tumbling forward to show the bottom chassis
- *  0.38 - 0.50  hold: bottom chassis
- *  0.50 - 0.58  flips back upright
- *  0.58 - 0.72  lid opens, display faces the camera
- *  0.72 - 0.94  hold open (DOM dashboard expands over the display and back)
- *  0.94 - 0.99  lid closes
+ * Stage timing lives in story-timeline.ts (POSE_KEYS).
  *
  * Orientation notes:
  *  - The laptop only ever tumbles forward around X, so there is no sideways spin.
@@ -204,11 +197,11 @@ const OPEN_VIEW: Omit<Key, 'p'> = {
 
 const KEYS: readonly Key[] = [
   REST,
-  { ...REST, p: 0.06 },
-  { ...LID_VIEW, p: 0.18 },
-  { ...LID_VIEW, p: 0.28 },
-  { ...BOTTOM_VIEW, p: 0.38 },
-  { ...BOTTOM_VIEW, p: 0.5 },
+  { ...REST, p: POSE_KEYS.introEnd },
+  { ...LID_VIEW, p: POSE_KEYS.lid },
+  { ...LID_VIEW, p: POSE_KEYS.lidHold },
+  { ...BOTTOM_VIEW, p: POSE_KEYS.bottom },
+  { ...BOTTOM_VIEW, p: POSE_KEYS.bottomHold },
   {
     alpha: 0,
     rotX: TAU + 0.3,
@@ -219,10 +212,10 @@ const KEYS: readonly Key[] = [
     zoom: 1.1,
     anchor: 0,
     glow: 0,
-    p: 0.58,
+    p: POSE_KEYS.upright,
   },
-  { ...OPEN_VIEW, p: 0.72 },
-  { ...OPEN_VIEW, p: 0.94 },
+  { ...OPEN_VIEW, p: POSE_KEYS.open },
+  { ...OPEN_VIEW, p: POSE_KEYS.openHold },
   {
     alpha: 0,
     rotX: TAU + 0.45,
@@ -233,7 +226,7 @@ const KEYS: readonly Key[] = [
     zoom: 1,
     anchor: 0,
     glow: 0,
-    p: 0.99,
+    p: POSE_KEYS.closed,
   },
   {
     alpha: 0,
@@ -353,6 +346,7 @@ interface LaptopAssets {
     bottomChassis: CanvasTexture
     keyboard: CanvasTexture
     screen: CanvasTexture
+    qadamScreen: CanvasTexture
   }
   materials: {
     aluminum: MeshStandardMaterial
@@ -362,6 +356,7 @@ interface LaptopAssets {
     bottomPlate: MeshStandardMaterial
     backCover: MeshStandardMaterial
     screen: MeshStandardMaterial
+    qadamScreen: MeshStandardMaterial
   }
   geometries: {
     baseChassis: RoundedBoxGeometry
@@ -389,6 +384,7 @@ function useLaptopAssets(): LaptopAssets {
       bottomChassis: createBottomChassisTexture(aniso),
       keyboard: createKeyboardDeckTexture(aniso),
       screen: createDefaultScreenTexture(aniso),
+      qadamScreen: createQadamScreenTexture(aniso),
     }
 
     const materials = {
@@ -416,6 +412,18 @@ function useLaptopAssets(): LaptopAssets {
         emissiveIntensity: 0,
         roughness: 0.3,
         metalness: 0.1,
+      }),
+      // Second display layer: fades in over the Voyage AI artwork when the story moves on.
+      qadamScreen: new MeshStandardMaterial({
+        map: textures.qadamScreen,
+        emissiveMap: textures.qadamScreen,
+        emissive: '#ffffff',
+        emissiveIntensity: 0,
+        roughness: 0.3,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
       }),
     }
 
@@ -535,6 +543,10 @@ function LaptopMesh({ progress, bottomInsetRef, screenRectRef }: LaptopMeshProps
     hp.rotation.x = MathUtils.damp(hp.rotation.x, Math.PI / 2 - pose.alpha, k, delta)
 
     m.screen.emissiveIntensity = 0.2 + pose.glow * 0.25
+    const qadamMix = smoothstep(SCREEN_SWITCH[0], SCREEN_SWITCH[1], progress.get())
+    m.qadamScreen.opacity = qadamMix
+    m.qadamScreen.emissiveIntensity = (0.2 + pose.glow * 0.25) * 0.7
+    m.qadamScreen.visible = qadamMix > 0.001
 
     // Publish the projected display rectangle for the DOM hybrid transition.
     r.updateMatrixWorld(true)
@@ -619,6 +631,11 @@ function LaptopMesh({ progress, bottomInsetRef, screenRectRef }: LaptopMeshProps
           {/* Inner display (faces +Z). The interactive dashboard is a native DOM layer
               that starts exactly on this rectangle and expands to full width. */}
           <mesh geometry={g.screenPlane} material={m.screen} position={[0, LH / 2, SCREEN_Z]} />
+          <mesh
+            geometry={g.screenPlane}
+            material={m.qadamScreen}
+            position={[0, LH / 2, SCREEN_Z + 0.002]}
+          />
         </group>
       </group>
     </group>

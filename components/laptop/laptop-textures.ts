@@ -460,3 +460,113 @@ export function createDefaultScreenTexture(maxAnisotropy: number, scale = textur
 
   return toTexture(canvas, maxAnisotropy)
 }
+
+/** QADAM Hub brand colours. */
+const NAVY = '#1B2440'
+const IVORY = '#F7F4EE'
+const GOLD = '#C9A25E'
+const GOLD_TEXT = '#8A6A2E'
+
+/** Draws the QADAM mark (a Q whose ring rises into an arrow) centred on (cx, cy). */
+function drawQadamMark(ctx: CanvasRenderingContext2D, cx: number, cy: number, size: number, color: string) {
+  // The source SVG uses a 54 unit view box starting at (6, 7.5).
+  const k = size / 54
+  ctx.save()
+  ctx.translate(cx - size / 2 - 6 * k, cy - size / 2 - 7.5 * k)
+  ctx.scale(k, k)
+  ctx.strokeStyle = color
+  ctx.lineWidth = 6
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+  ctx.stroke(new Path2D('M34.18,15.68 A20,20 0 1 0 49.0,35.0 L49.0,14'))
+  ctx.stroke(new Path2D('M41.0,22 L49.0,14 L57.0,22'))
+  ctx.stroke(new Path2D('M38 45 L47 54'))
+  ctx.restore()
+}
+
+/**
+ * Display texture for the second project: the top of the QADAM Hub showcase (header, hero and
+ * stats), drawn with the same light palette and layout as the DOM panel that expands from it.
+ */
+export function createQadamScreenTexture(maxAnisotropy: number, scale = textureScale()): CanvasTexture {
+  const [c, ctx, canvas] = makeCanvas(1600, 1000, scale)
+  const W = c.width
+  const H = c.height
+
+  const box = (x: number, y: number, w: number, h: number, r: number, fill: string, stroke?: string) => {
+    ctx.beginPath()
+    ctx.roundRect(x, y, w, h, r)
+    ctx.fillStyle = fill
+    ctx.fill()
+    if (stroke) {
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = 2
+      ctx.stroke()
+    }
+  }
+  const text = (s: string, x: number, y: number, font: string, color: string, align: CanvasTextAlign = 'left') => {
+    ctx.font = font
+    ctx.fillStyle = color
+    ctx.textAlign = align
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText(s, x, y)
+  }
+
+  ctx.fillStyle = IVORY
+  ctx.fillRect(0, 0, W, H)
+
+  // Header
+  ctx.fillStyle = '#ffffff'
+  ctx.fillRect(0, 0, W, 76)
+  ctx.fillStyle = 'rgba(27, 36, 64, 0.12)'
+  ctx.fillRect(0, 75, W, 2)
+  drawQadamMark(ctx, 54, 38, 34, NAVY)
+  text('QADAM Hub', 88, 48, `700 26px ${SANS}`, NAVY)
+  box(240, 24, 112, 30, 15, 'rgba(201, 162, 94, 0.16)', 'rgba(201, 162, 94, 0.55)')
+  text('LIVE BETA', 296, 45, `600 14px ${MONO}`, GOLD_TEXT, 'center')
+  box(W - 236, 18, 204, 42, 10, NAVY)
+  text('Open live site  ↗', W - 134, 46, `600 18px ${SANS}`, IVORY, 'center')
+
+  // Hero card
+  // Same share of the width as the DOM hero (max-w-5xl inside the expanded panel).
+  const hx = 216
+  const hw = W - hx * 2
+  box(hx, 116, hw, 520, 28, '#ffffff', 'rgba(27, 36, 64, 0.1)')
+  text('AI OPPORTUNITY HUB  ·  STUDENT STARTUP', W / 2, 186, `600 17px ${MONO}`, GOLD_TEXT, 'center')
+  text('QADAM Hub.', W / 2, 286, `800 84px ${SANS}`, NAVY, 'center')
+  text('Take your first step.', W / 2, 380, `800 84px ${SANS}`, GOLD, 'center')
+  text('Grants, hackathons, internships and AI programs you are actually eligible for,', W / 2, 446, `400 23px ${SANS}`, '#475069', 'center')
+  text('found by a daily radar and delivered to Telegram, Discord and KakaoTalk.', W / 2, 480, `400 23px ${SANS}`, '#475069', 'center')
+  box(W / 2 - 236, 524, 220, 56, 12, NAVY)
+  text('Open QADAM Hub  →', W / 2 - 126, 560, `600 20px ${SANS}`, IVORY, 'center')
+  box(W / 2 + 16, 524, 220, 56, 12, '#ffffff', 'rgba(27, 36, 64, 0.25)')
+  text('How it works', W / 2 + 126, 560, `600 20px ${SANS}`, NAVY, 'center')
+
+  // Stats
+  const stats: ReadonlyArray<readonly [string, string]> = [
+    ['4x', 'RADAR SCANS A DAY'],
+    ['3', 'MESSENGER CHANNELS'],
+    ['3', 'PRODUCT PILLARS'],
+    ['0', 'PII IN WEBHOOKS'],
+  ]
+  const gap = 24
+  const sw = (hw - gap * 3) / 4
+  stats.forEach(([value, label], i) => {
+    const x = hx + i * (sw + gap)
+    box(x, 672, sw, 132, 18, '#ffffff', 'rgba(27, 36, 64, 0.1)')
+    text(value, x + sw / 2, 742, `800 46px ${SANS}`, NAVY, 'center')
+    text(label, x + sw / 2, 778, `500 14px ${MONO}`, '#6b7280', 'center')
+  })
+
+  // Pillars, partially visible: the showcase continues below the fold.
+  const pw = (hw - gap * 2) / 3
+  ;['01 / ELIGIBILITY RADAR', '02 / CV & SKILL LAB', '03 / MESSENGER BOTS'].forEach((label, i) => {
+    const x = hx + i * (pw + gap)
+    box(x, 840, pw, 220, 18, '#ffffff', 'rgba(27, 36, 64, 0.1)')
+    text(label, x + 28, 892, `700 19px ${MONO}`, NAVY)
+    ctx.fillStyle = GOLD
+    ctx.fillRect(x + 28, 912, 48, 4)
+  })
+
+  return toTexture(canvas, maxAnisotropy)
+}

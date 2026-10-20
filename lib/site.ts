@@ -21,10 +21,17 @@ export const voyageLinks = {
   repo: 'https://github.com/Amir3003/AItouragent',
 } as const
 
+export const qadamLinks = {
+  site: 'https://nvidia-pathfinder.vercel.app/welcome',
+  instagram: 'https://instagram.com/joinqadamhub',
+  tiktok: 'https://www.tiktok.com/@qadamhub',
+} as const
+
 export const navItems = [
   { label: 'Profile', href: '#about' },
   { label: 'Architecture', href: '#architecture' },
   { label: 'Voyage AI', href: '#voyage' },
+  { label: 'QADAM Hub', href: '#qadam' },
   { label: 'Contact', href: '#contact' },
 ] as const
 

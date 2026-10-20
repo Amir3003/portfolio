@@ -7,9 +7,12 @@ export function SiteHeader() {
         <a href="#top" className="font-mono text-sm text-neutral-100">
           amir.dev
         </a>
-        <ul className="flex items-center gap-5">
+        <ul className="flex items-center gap-4 sm:gap-5">
           {navItems.map((item) => (
-            <li key={item.href} className={item.href === '#architecture' ? 'hidden sm:block' : undefined}>
+            <li
+              key={item.href}
+              className={item.href === '#architecture' || item.href === '#about' ? 'hidden sm:block' : undefined}
+            >
               <a
                 href={item.href}
                 className="text-sm text-neutral-400 underline-offset-4 hover:text-neutral-100 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-400"

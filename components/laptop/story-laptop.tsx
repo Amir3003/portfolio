@@ -4,6 +4,16 @@ import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, useTransform } from 'framer-motion'
 import type { ScreenRect } from '@/components/laptop/laptop-scene'
+import { QadamShowcase } from '@/components/laptop/qadam-showcase'
+import {
+  POSE_KEYS,
+  QADAM_WINDOW,
+  STORY_HEIGHT_VH,
+  VOYAGE_WINDOW,
+  expandAmount,
+  panelOpacity,
+  type PanelWindow,
+} from '@/components/laptop/story-timeline'
 import { useLaptopProgress } from '@/components/laptop/use-laptop-progress'
 import { VoyageDashboard } from '@/components/laptop/voyage-dashboard'
 
@@ -42,21 +52,10 @@ function panelGeometry(vw: number) {
     : { gutter: 16, topClear: 84, bottomBand: 72 }
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Timeline helpers (progress 0 to 1 over the sticky section)                */
-/* -------------------------------------------------------------------------- */
-
-const clamp01 = (x: number): number => Math.min(1, Math.max(0, x))
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t
-const smoothstep = (a: number, b: number, x: number): number => {
-  const t = clamp01((x - a) / (b - a))
-  return t * t * (3 - 2 * t)
-}
 
-/** 0 = dashboard sits on the laptop display, 1 = fully expanded. */
-const expandAmount = (p: number): number => smoothstep(0.76, 0.84, p) * (1 - smoothstep(0.9, 0.94, p))
-/** Dashboard layer opacity: it appears as the display "switches on" and leaves as the lid closes. */
-const panelOpacity = (p: number): number => smoothstep(0.745, 0.765, p) * (1 - smoothstep(0.93, 0.95, p))
+/** Scroll progress at which an anchor sits, as a share of the section height. */
+const anchorTop = (p: number): string => `${((p * (STORY_HEIGHT_VH - 100)) / STORY_HEIGHT_VH) * 100}%`
 
 const eventsFor = (v: number): 'auto' | 'none' => (v > 0.05 ? 'auto' : 'none')
 
@@ -136,7 +135,8 @@ export function StoryLaptop() {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewportRef = useRef<HTMLDivElement>(null)
   const cueRef = useRef<HTMLDivElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
+  const voyageRef = useRef<HTMLDivElement>(null)
+  const qadamRef = useRef<HTMLDivElement>(null)
   const hintRef = useRef<HTMLDivElement>(null)
 
   /** Distance from the viewport bottom to the chassis bottom edge at 0% scroll. */
@@ -203,20 +203,20 @@ export function StoryLaptop() {
   // the element style from one rAF loop, so React never re-renders while scrolling.
   useEffect(() => {
     if (useFallback || !inView) return
-    const panel = panelRef.current
     const hint = hintRef.current
-    if (!panel) return
+    const panels: Array<{ el: HTMLDivElement; window: PanelWindow; visible: boolean }> = []
+    if (voyageRef.current) panels.push({ el: voyageRef.current, window: VOYAGE_WINDOW, visible: false })
+    if (qadamRef.current) panels.push({ el: qadamRef.current, window: QADAM_WINDOW, visible: false })
+    if (panels.length === 0) return
 
     let raf = 0
-    let wasVisible = false
 
-    const hide = () => {
-      if (!wasVisible) return
-      wasVisible = false
-      panel.style.visibility = 'hidden'
-      panel.style.pointerEvents = 'none'
-      panel.style.opacity = '0'
-      if (hint) hint.style.opacity = '0'
+    const hide = (panel: (typeof panels)[number]) => {
+      if (!panel.visible) return
+      panel.visible = false
+      panel.el.style.visibility = 'hidden'
+      panel.el.style.pointerEvents = 'none'
+      panel.el.style.opacity = '0'
     }
 
     const tick = () => {
@@ -226,82 +226,99 @@ export function StoryLaptop() {
       if (!viewport || !rect.valid) return
 
       const p = progress.get()
-      const opacity = panelOpacity(p)
-      if (opacity < 0.001) {
-        hide()
-        return
-      }
-      wasVisible = true
-
-      const e = expandAmount(p)
       const vw = viewport.clientWidth
       const vh = viewport.clientHeight
 
-      // Final (expanded) box.
+      // Final (expanded) box, shared by both panels.
       const { gutter, topClear, bottomBand } = panelGeometry(vw)
       const fw = Math.min(vw - gutter * 2, PANEL_MAX_WIDTH)
       const fh = Math.max(PANEL_MIN_HEIGHT, vh - topClear - bottomBand)
       const fx = (vw - fw) / 2
       const fy = topClear
-
       // Uniform scale that covers the laptop display, cropped to the display rectangle.
       const s0 = Math.max(rect.w / fw, rect.h / fh)
-      const s = lerp(s0, 1, e)
-      const x = lerp(rect.x, fx, e)
-      const y = lerp(rect.y, fy, e)
-      const visW = lerp(rect.w, fw, e)
-      const visH = lerp(rect.h, fh, e)
 
-      panel.style.width = `${fw}px`
-      panel.style.height = `${fh}px`
-      panel.style.visibility = 'visible'
-      panel.style.opacity = String(opacity)
+      let hintOpacity = 0
+      for (const panel of panels) {
+        const opacity = panelOpacity(panel.window, p)
+        if (opacity < 0.001) {
+          hide(panel)
+          continue
+        }
+        panel.visible = true
+        const el = panel.el
+        const e = expandAmount(panel.window, p)
+        const s = lerp(s0, 1, e)
+        const x = lerp(rect.x, fx, e)
+        const y = lerp(rect.y, fy, e)
+        const visW = lerp(rect.w, fw, e)
+        const visH = lerp(rect.h, fh, e)
 
-      if (e >= 0.999) {
-        panel.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
-        panel.style.clipPath = 'none'
-      } else {
-        const clipRight = Math.max(0, fw - visW / s)
-        const clipBottom = Math.max(0, fh - visH / s)
-        panel.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${s})`
-        panel.style.clipPath = `inset(0px ${clipRight}px ${clipBottom}px 0px round ${12 / s}px)`
+        el.style.width = `${fw}px`
+        el.style.height = `${fh}px`
+        el.style.visibility = 'visible'
+        el.style.opacity = String(opacity)
+
+        if (e >= 0.999) {
+          el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
+          el.style.clipPath = 'none'
+        } else {
+          const clipRight = Math.max(0, fw - visW / s)
+          const clipBottom = Math.max(0, fh - visH / s)
+          el.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${s})`
+          el.style.clipPath = `inset(0px ${clipRight}px ${clipBottom}px 0px round ${12 / s}px)`
+        }
+
+        // Interactive only when fully expanded: no pointer interception at any other time.
+        el.style.pointerEvents = e > 0.98 && opacity > 0.98 ? 'auto' : 'none'
+        hintOpacity = Math.max(hintOpacity, e * opacity)
       }
-
-      // Interactive only when fully expanded: no pointer interception at any other time.
-      panel.style.pointerEvents = e > 0.98 && opacity > 0.98 ? 'auto' : 'none'
-      if (hint) hint.style.opacity = String(e * opacity)
+      if (hint) hint.style.opacity = String(hintOpacity)
     }
 
     raf = requestAnimationFrame(tick)
     return () => {
       cancelAnimationFrame(raf)
-      hide()
+      panels.forEach(hide)
+      if (hint) hint.style.opacity = '0'
     }
   }, [useFallback, inView, progress])
 
   // Initial scroll cue.
-  const scrollCueOpacity = useTransform(progress, [0, 0.06, 0.1], [1, 0.6, 0])
+  const scrollCueOpacity = useTransform(progress, [0, 0.046, 0.077], [1, 0.6, 0])
 
   // Stage 1: outer lid and profile.
-  const stage1Opacity = useTransform(progress, [0.1, 0.16, 0.26, 0.3], [0, 1, 1, 0])
-  const stage1Y = useTransform(progress, [0.1, 0.16, 0.26, 0.3], [20, 0, 0, -20])
+  const stage1Opacity = useTransform(progress, [0.077, 0.123, 0.2, 0.23], [0, 1, 1, 0])
+  const stage1Y = useTransform(progress, [0.077, 0.123, 0.2, 0.23], [20, 0, 0, -20])
   const stage1Events = useTransform(stage1Opacity, eventsFor)
 
   // Stage 2 and 3: bottom chassis and architecture.
-  const stage2Opacity = useTransform(progress, [0.32, 0.38, 0.48, 0.52], [0, 1, 1, 0])
-  const stage2Y = useTransform(progress, [0.32, 0.38, 0.48, 0.52], [20, 0, 0, -20])
+  const stage2Opacity = useTransform(progress, [0.245, 0.29, 0.368, 0.4], [0, 1, 1, 0])
+  const stage2Y = useTransform(progress, [0.245, 0.29, 0.368, 0.4], [20, 0, 0, -20])
   const stage2Events = useTransform(stage2Opacity, eventsFor)
 
-  // The 3D scene steps aside while the dashboard is expanded, returns for the closing
-  // sequence, and fades out for the hand-off to the Contact section.
+  // The 3D scene steps aside while a project panel is expanded, comes back between the two
+  // projects and for the closing sequence, and fades out for the hand-off to Contact.
   const sceneOpacity = useTransform(
     progress,
-    [0, 0.78, 0.84, 0.9, 0.94, 0.985, 1],
-    [1, 1, 0, 0, 1, 1, 0],
+    [
+      0,
+      VOYAGE_WINDOW.expand[0] + 0.01,
+      VOYAGE_WINDOW.expand[1],
+      VOYAGE_WINDOW.collapse[0],
+      VOYAGE_WINDOW.collapse[1],
+      QADAM_WINDOW.expand[0] + 0.01,
+      QADAM_WINDOW.expand[1],
+      QADAM_WINDOW.collapse[0],
+      QADAM_WINDOW.collapse[1],
+      0.985,
+      1,
+    ],
+    [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0],
   )
 
   // Stage 5: contact label appears as the lid closes.
-  const contactOpacity = useTransform(progress, [0.965, 0.995], [0, 1])
+  const contactOpacity = useTransform(progress, [POSE_KEYS.closed - 0.01, 0.995], [0, 1])
   const contactEvents = useTransform(contactOpacity, eventsFor)
 
   // Static fallback for reduced motion or missing WebGL.
@@ -331,17 +348,22 @@ export function StoryLaptop() {
         <div id="voyage" className="h-[720px] w-full lg:h-[640px]">
           <VoyageDashboard />
         </div>
+
+        <div id="qadam" className="h-[720px] w-full lg:h-[640px]">
+          <QadamShowcase />
+        </div>
       </div>
     )
   }
 
   return (
-    <div ref={containerRef} className="relative h-[560vh]">
-      {/* Anchors, placed where each stage sits in the scroll range (p * 460 / 560). */}
+    <div ref={containerRef} className="relative" style={{ height: `${STORY_HEIGHT_VH}vh` }}>
+      {/* Anchors, placed where each stage holds in the scroll range. */}
       <div id="top" className="absolute top-0" />
-      <div id="about" className="absolute top-[10%]" />
-      <div id="architecture" className="absolute top-[33%]" />
-      <div id="voyage" className="absolute top-[67%]" />
+      <div id="about" className="absolute" style={{ top: anchorTop(0.17) }} />
+      <div id="architecture" className="absolute" style={{ top: anchorTop(0.33) }} />
+      <div id="voyage" className="absolute" style={{ top: anchorTop((VOYAGE_WINDOW.expand[1] + VOYAGE_WINDOW.collapse[0]) / 2) }} />
+      <div id="qadam" className="absolute" style={{ top: anchorTop((QADAM_WINDOW.expand[1] + QADAM_WINDOW.collapse[0]) / 2) }} />
 
       <div ref={viewportRef} className="sticky top-0 h-screen w-full overflow-hidden">
         {/* Layer 10: WebGL laptop. Never receives pointer events. */}
@@ -412,16 +434,24 @@ export function StoryLaptop() {
           </motion.a>
         </div>
 
-        {/* Layer 30: native Voyage AI dashboard. A normal DOM subtree (no portal, no CSS 3D),
+        {/* Layer 30: native project panels (Voyage AI, then QADAM Hub). Normal DOM subtrees (no portal, no CSS 3D),
             positioned and scaled from the rAF loop above. Hidden and non-interactive until
             the laptop is open and the panel has fully expanded. */}
         <div
-          ref={panelRef}
+          ref={voyageRef}
           id="voyage-panel"
           className="absolute left-0 top-0 z-30 origin-top-left"
           style={{ visibility: 'hidden', opacity: 0, pointerEvents: 'none' }}
         >
           <VoyageDashboard />
+        </div>
+        <div
+          ref={qadamRef}
+          id="qadam-panel"
+          className="absolute left-0 top-0 z-30 origin-top-left"
+          style={{ visibility: 'hidden', opacity: 0, pointerEvents: 'none' }}
+        >
+          <QadamShowcase />
         </div>
 
         {/* Layer 30: scroll hint in the band below the dashboard. The page scrolls normally
