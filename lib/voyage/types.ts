@@ -5,6 +5,9 @@
  * (`hotel_search.py`, `ai_agent.py`). Wire-format keys are camelCase.
  */
 
+/** UI and reply language. */
+export type Lang = 'en' | 'ru'
+
 export const COUNTRIES = [
   'Turkey',
   'Egypt',

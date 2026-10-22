@@ -5,6 +5,18 @@ import { Check, ExternalLink, RefreshCw, ShieldCheck, Star, X } from 'lucide-rea
 import { postAgentTurn } from '@/lib/voyage/client'
 import { emptySlots } from '@/lib/voyage/defaults'
 import { formatKzt, formatUsd } from '@/lib/voyage/format'
+import {
+  DICTIONARY,
+  LANGS,
+  LANG_STORAGE_KEY,
+  isLang,
+  localizeBadge,
+  type BeachKind,
+  type Lang,
+  type MealCode,
+  type SuiteId,
+  type VoyageDict,
+} from '@/lib/voyage/i18n'
 import type { Recommendation, Slots } from '@/lib/voyage/types'
 import { voyageLinks } from '@/lib/site'
 
@@ -20,17 +32,19 @@ interface PkgFlight {
   toCode: string
   duration: string
   times: string
-  baggage: string
 }
 
 interface Pkg {
   id: string
   name: string
-  place: string
+  location: string
+  stars: number
+  meal: string
   rating: number
   badge: string
   affinity: number
-  guests: string
+  adults: number
+  children: number
   photo: string
   photoFallback?: string
   flight: PkgFlight
@@ -41,21 +55,14 @@ interface Pkg {
   /** Total package price at the central date and the initial meal plan. */
   baseKzt: number
   mealCode: string
-  beach: string | null
+  beach: BeachKind | null
   cityKm: number | null
   amenities: string[]
 }
 
 interface Suite {
-  id: string
-  name: string
-  detail: string
+  id: SuiteId
   extraKzt: number
-}
-
-interface Chip {
-  label: string
-  query: string
 }
 
 interface Message {
@@ -77,23 +84,7 @@ interface Selection {
 /*  Static content                                                            */
 /* -------------------------------------------------------------------------- */
 
-const WELCOME =
-  'Welcome to Voyage AI! I am your autonomous travel concierge. Where would you like to travel, for how many nights, and what is your preferred budget and party size?'
-
-const CHIPS: readonly Chip[] = [
-  {
-    label: 'Need flights to Dubai, 2 adults, for a week...',
-    query: 'Need flights to Dubai from Astana, 2 adults, 7 nights, $3,500',
-  },
-  { label: 'Solo trip to Dubai, 5 nights', query: 'Solo trip to Dubai from Astana, 5 nights, $2,500' },
-  {
-    label: 'Family holiday in Antalya from Astana, 7 nights',
-    query: 'Family holiday in Antalya from Astana, 7 nights, $2,800',
-  },
-  { label: 'Phuket vacation, 8 nights', query: 'Phuket vacation from Almaty, 8 nights, $2,200' },
-]
-
-const MEAL_PLANS: readonly { code: string; surcharge: number }[] = [
+const MEAL_PLANS: readonly { code: MealCode; surcharge: number }[] = [
   { code: 'BB', surcharge: 0 },
   { code: 'HB', surcharge: 65000 },
   { code: 'FB', surcharge: 120000 },
@@ -102,18 +93,10 @@ const MEAL_PLANS: readonly { code: string; surcharge: number }[] = [
 ]
 
 const SUITES: readonly Suite[] = [
-  { id: 'superior', name: 'Superior City View', detail: '32 m² · King bed · City skyline view', extraKzt: 0 },
-  { id: 'deluxe', name: 'Deluxe Sea View', detail: '38 m² · King bed · Private balcony, sea view', extraKzt: 95000 },
-  { id: 'executive', name: 'Executive Suite', detail: '58 m² · Separate lounge · Club lounge access', extraKzt: 210000 },
-  { id: 'royal', name: 'Royal Panorama Suite', detail: '96 m² · Two bedrooms · Panoramic terrace, butler', extraKzt: 420000 },
-]
-
-const INCLUDED_AMENITIES: readonly string[] = [
-  'Free high-speed Wi-Fi',
-  'Round-trip airport transfer',
-  'Daily housekeeping and turndown',
-  'Spa and fitness access',
-  '24/7 Voyage AI concierge',
+  { id: 'superior', extraKzt: 0 },
+  { id: 'deluxe', extraKzt: 95000 },
+  { id: 'executive', extraKzt: 210000 },
+  { id: 'royal', extraKzt: 420000 },
 ]
 
 interface ResortPhoto {
@@ -178,7 +161,23 @@ function durationMinutes(text: string): number {
   return Number(m?.[1] ?? 0) * 60 + Number(m?.[2] ?? 0)
 }
 
-function toPackage(r: Recommendation, index: number): Pkg {
+function formatDuration(text: string, t: VoyageDict): string {
+  const total = durationMinutes(text)
+  return total > 0 ? t.duration(Math.floor(total / 60), total % 60) : text
+}
+
+const isMealCode = (code: string): code is MealCode => MEAL_PLANS.some((m) => m.code === code)
+
+/** Localizes the engine's meal string, e.g. `AI - All Inclusive`, keeping the code. */
+function mealText(meal: string, t: VoyageDict): string {
+  const code = mealCodeOf(meal)
+  return isMealCode(code) ? `${code} - ${t.mealNames[code]}` : meal
+}
+
+const placeText = (pkg: Pkg, t: VoyageDict): string =>
+  `${t.locations[pkg.location] ?? pkg.location} · ${pkg.stars}★ · ${mealText(pkg.meal, t)}`
+
+function toPackage(r: Recommendation, index: number, slots: Slots): Pkg {
   const nights = Math.max(
     1,
     Math.round((isoMs(r.flight.returnDate) - isoMs(r.flight.departDate)) / 86400000),
@@ -190,11 +189,14 @@ function toPackage(r: Recommendation, index: number): Pkg {
   return {
     id: r.id,
     name: r.name,
-    place: `${r.country}, ${r.location} · ${r.stars}★ · ${r.meal}`,
+    location: r.location,
+    stars: r.stars,
+    meal: r.meal,
     rating: r.rating,
     badge: r.badge,
     affinity: r.matchScore,
-    guests: r.guestsBadge,
+    adults: slots.adults ?? 2,
+    children: slots.children,
     photo: photo.src,
     photoFallback: photo.fallback,
     flight: {
@@ -205,14 +207,13 @@ function toPackage(r: Recommendation, index: number): Pkg {
       toCode: r.flight.toCode,
       duration: r.flight.duration,
       times: `${depart} → ${addMinutes(depart, durationMinutes(r.flight.duration))}`,
-      baggage: '23 kg + 8 kg',
     },
     departIso: r.flight.departDate,
     nights,
     flightKzt: r.flightKzt,
     baseKzt: r.totalKzt,
     mealCode: mealCodeOf(r.meal),
-    beach: beachfront ? 'Beachfront' : privateBeach ? 'Private beach' : null,
+    beach: beachfront ? 'beachfront' : privateBeach ? 'private' : null,
     cityKm: null,
     amenities: [...r.amenities],
   }
@@ -280,9 +281,9 @@ function Bubble({ message }: { message: Message }) {
   )
 }
 
-function PendingBubble() {
+function PendingBubble({ label }: { label: string }) {
   return (
-    <div role="status" aria-label="Voyage AI is preparing your packages" className="flex justify-start">
+    <div role="status" aria-label={label} className="flex justify-start">
       <div className="flex w-64 flex-col gap-2 rounded-2xl rounded-bl-md bg-slate-800/70 px-4 py-3">
         <div className="h-3 w-11/12 animate-pulse rounded bg-slate-600/50" />
         <div className="h-3 w-8/12 animate-pulse rounded bg-slate-600/50" />
@@ -295,7 +296,17 @@ function PendingBubble() {
 /*  Package card                                                              */
 /* -------------------------------------------------------------------------- */
 
-function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Selection) => void }) {
+function PackageCard({
+  pkg,
+  t,
+  lang,
+  onExplore,
+}: {
+  pkg: Pkg
+  t: VoyageDict
+  lang: Lang
+  onExplore: (selection: Selection) => void
+}) {
   const [dateIdx, setDateIdx] = useState(2)
   const [meal, setMeal] = useState(pkg.mealCode)
 
@@ -323,13 +334,13 @@ function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Sele
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#0b1426] via-transparent to-black/20" />
         <span className="absolute left-3 top-3 rounded bg-amber-400 px-2 py-0.5 text-[11px] font-semibold text-slate-900">
-          {pkg.badge}
+          {localizeBadge(pkg.badge, lang)}
         </span>
         <span className="absolute right-3 top-3 rounded bg-black/65 px-2 py-0.5 text-[11px] font-medium text-white">
-          {pkg.affinity}% Affinity
+          {t.affinity(pkg.affinity)}
         </span>
         <span className="absolute bottom-3 left-3 rounded border border-emerald-400/40 bg-emerald-900/80 px-2 py-0.5 text-[11px] text-emerald-200">
-          {pkg.guests}
+          {t.guests(pkg.adults, pkg.children)}
         </span>
       </div>
 
@@ -337,7 +348,7 @@ function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Sele
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h3 className="truncate text-lg font-semibold text-white">{pkg.name}</h3>
-            <p className="mt-0.5 truncate text-xs text-slate-400">{pkg.place}</p>
+            <p className="mt-0.5 truncate text-xs text-slate-400">{placeText(pkg, t)}</p>
           </div>
           <span className="inline-flex shrink-0 items-center gap-1 rounded bg-amber-400 px-2 py-1 text-xs font-bold text-slate-900">
             <Star className="size-3 fill-slate-900" aria-hidden="true" />
@@ -356,28 +367,28 @@ function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Sele
               </span>
             </div>
             <span className="hidden shrink-0 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[10px] text-emerald-300 sm:inline">
-              Flight Included in Package
+              {t.flightIncluded}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between gap-2 text-slate-300">
             <p>
-              Direct Flight:{' '}
+              {t.directFlight}:{' '}
               <span className="font-semibold text-teal-300">
                 {pkg.flight.fromCode} → {pkg.flight.toCode}
               </span>{' '}
-              ({departLabel} - {returnLabel}), non-stop
+              ({departLabel} - {returnLabel}), {t.nonStop}
             </p>
-            <span className="shrink-0 text-slate-400">{pkg.flight.duration}</span>
+            <span className="shrink-0 text-slate-400">{formatDuration(pkg.flight.duration, t)}</span>
           </div>
           <div className="mt-1.5 flex items-center justify-between font-mono text-[11px] text-slate-400">
             <span>{pkg.flight.times}</span>
-            <span>{pkg.flight.baggage}</span>
+            <span>{t.baggage}</span>
           </div>
         </div>
 
         <div>
           <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">
-            Flexible departure dates:
+            {t.flexDates}
           </p>
           <div className="grid grid-cols-5 gap-1.5">
             {dates.map((d, idx) => {
@@ -396,9 +407,9 @@ function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Sele
                 >
                   <span className={`text-[11px] font-semibold ${active ? 'text-white' : 'text-slate-200'}`}>
                     {d.label}
-                    {active ? ' (Selected)' : ''}
+                    {active ? ` (${t.selected})` : ''}
                   </span>
-                  <span className="font-mono text-[10px] text-slate-400">{formatKzt(priceFor(idx, meal))}</span>
+                  <span className="font-mono text-[10px] text-slate-400">{formatKzt(priceFor(idx, meal), lang)}</span>
                 </button>
               )
             })}
@@ -408,28 +419,29 @@ function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Sele
         <div className="flex flex-wrap gap-1.5 text-[11px]">
           {pkg.beach ? (
             <span className="rounded border border-teal-300/25 bg-teal-400/10 px-2 py-0.5 text-teal-200">
-              Beach: {pkg.beach}
+              {t.beachLabel}: {t.beach[pkg.beach]}
             </span>
           ) : null}
           {pkg.cityKm !== null ? (
             <span className="rounded border border-teal-300/25 bg-teal-400/10 px-2 py-0.5 text-teal-200">
-              City center: {pkg.cityKm} km
+              {t.cityCenter(pkg.cityKm)}
             </span>
           ) : null}
         </div>
 
         <div>
-          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">Meal plan:</p>
+          <p className="mb-1.5 font-mono text-[10px] uppercase tracking-wider text-slate-400">{t.mealLabel}</p>
           <div className="flex flex-wrap gap-1.5">
             {MEAL_PLANS.map((m) => {
               const delta = m.surcharge - initialSurcharge
               const active = m.code === meal
-              const hint = delta === 0 ? 'base' : `${delta > 0 ? '+' : '-'}${Math.abs(delta) / 1000}K`
+              const hint = delta === 0 ? t.mealBase : `${delta > 0 ? '+' : '-'}${Math.abs(delta) / 1000}K`
               return (
                 <button
                   key={m.code}
                   type="button"
                   aria-pressed={active}
+                  title={t.mealNames[m.code]}
                   onClick={() => setMeal(m.code)}
                   className={`rounded-md border px-2 py-1 text-[11px] transition ${
                     active
@@ -448,13 +460,13 @@ function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Sele
         <div className="mt-auto rounded-xl border border-teal-300/15 bg-[#08101f] px-4 py-3">
           <div className="flex items-end justify-between gap-3">
             <p className="text-2xl font-bold text-white">
-              {formatKzt(total)}{' '}
+              {formatKzt(total, lang)}{' '}
               <span className="text-sm font-semibold text-teal-300">({formatUsd(total)})</span>
             </p>
-            <span className="text-xs text-teal-300">Instant Confirmation</span>
+            <span className="text-xs text-teal-300">{t.instantConfirm}</span>
           </div>
           <p className="mt-1 font-mono text-[11px] text-slate-400">
-            Hotel ({pkg.nights}n): {formatKzt(total - pkg.flightKzt)} + Roundtrip Flight: {formatKzt(pkg.flightKzt)}
+            {t.priceBreakdown(pkg.nights, formatKzt(total - pkg.flightKzt, lang), formatKzt(pkg.flightKzt, lang))}
           </p>
         </div>
 
@@ -463,7 +475,7 @@ function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Sele
           onClick={() => onExplore({ pkg, dateLabel: departLabel, mealCode: meal, totalKzt: total })}
           className="flex items-center justify-between rounded-xl border border-teal-300/30 bg-teal-400/5 px-4 py-3 text-sm font-semibold text-teal-300 transition hover:border-teal-300 hover:bg-teal-400/10"
         >
-          <span>Explore Suite Options &amp; Details</span>
+          <span>{t.explore}</span>
           <span aria-hidden="true">→</span>
         </button>
       </div>
@@ -476,9 +488,11 @@ function PackageCard({ pkg, onExplore }: { pkg: Pkg; onExplore: (selection: Sele
 /* -------------------------------------------------------------------------- */
 
 export function VoyageDashboard() {
+  const [lang, setLang] = useState<Lang>('en')
+  const t = DICTIONARY[lang]
   const [input, setInput] = useState('')
   const [slots, setSlots] = useState<Slots>(emptySlots)
-  const [messages, setMessages] = useState<Message[]>([{ id: 0, role: 'assistant', text: WELCOME }])
+  const [messages, setMessages] = useState<Message[]>([{ id: 0, role: 'assistant', text: DICTIONARY.en.welcome }])
   const [packages, setPackages] = useState<readonly Pkg[]>([])
   const [isPending, startTransition] = useTransition()
   const logRef = useRef<HTMLDivElement>(null)
@@ -487,10 +501,38 @@ export function VoyageDashboard() {
 
   const [step, setStep] = useState<Step>('closed')
   const [selection, setSelection] = useState<Selection | null>(null)
-  const [suiteId, setSuiteId] = useState<string>(SUITES[0]?.id ?? 'superior')
+  const [suiteId, setSuiteId] = useState<SuiteId>(SUITES[0]?.id ?? 'superior')
   const [phone, setPhone] = useState('')
-  const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState(false)
   const [reference, setReference] = useState('')
+
+  /** Applies a language; the welcome message follows it until the first user turn. */
+  const applyLang = (next: Lang) => {
+    setLang(next)
+    setMessages((prev) =>
+      prev.some((m) => m.role === 'user')
+        ? prev
+        : prev.map((m) => (m.id === 0 && m.role === 'assistant' ? { ...m, text: DICTIONARY[next].welcome } : m)),
+    )
+  }
+
+  const chooseLang = (next: Lang) => {
+    applyLang(next)
+    try {
+      window.localStorage.setItem(LANG_STORAGE_KEY, next)
+    } catch {
+      // Storage can be blocked (private mode); the choice still applies to this visit.
+    }
+  }
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LANG_STORAGE_KEY)
+      if (isLang(saved) && saved !== 'en') applyLang(saved)
+    } catch {
+      // Storage unavailable: keep the default language.
+    }
+  }, [])
 
   useEffect(() => {
     const el = logRef.current
@@ -499,7 +541,7 @@ export function VoyageDashboard() {
 
   const closeModal = () => {
     setStep('closed')
-    setPhoneError(null)
+    setPhoneError(false)
   }
 
   useEffect(() => {
@@ -523,16 +565,16 @@ export function VoyageDashboard() {
     setInput('')
     startTransition(async () => {
       try {
-        const res = await postAgentTurn(text, slots)
+        const res = await postAgentTurn(text, slots, lang)
         setSlots(res.slots)
         push('assistant', res.reply)
         if (res.results.length > 0) {
-          setPackages(res.results.map(toPackage))
+          setPackages(res.results.map((r, i) => toPackage(r, i, res.slots)))
         } else {
           setPackages([])
         }
       } catch (err) {
-        push('error', err instanceof Error ? err.message : 'Voyage AI could not be reached. Please try again.')
+        push('error', lang === 'ru' || !(err instanceof Error) ? t.errorFallback : err.message)
       }
     })
   }
@@ -544,7 +586,7 @@ export function VoyageDashboard() {
 
   const reset = () => {
     setSlots(emptySlots())
-    setMessages([{ id: 0, role: 'assistant', text: WELCOME }])
+    setMessages([{ id: 0, role: 'assistant', text: t.welcome }])
     nextId.current = 1
     setPackages([])
     setInput('')
@@ -554,7 +596,7 @@ export function VoyageDashboard() {
     setSelection(s)
     setSuiteId(SUITES[0]?.id ?? 'superior')
     setPhone('')
-    setPhoneError(null)
+    setPhoneError(false)
     setStep('suites')
   }
 
@@ -565,20 +607,21 @@ export function VoyageDashboard() {
     e.preventDefault()
     const digits = phone.replace(/\D/g, '')
     if (digits.length < 7 || digits.length > 15) {
-      setPhoneError('Enter a valid phone or WhatsApp number (7 to 15 digits).')
+      setPhoneError(true)
       return
     }
-    setPhoneError(null)
+    setPhoneError(false)
     setReference(`VAI-${Date.now().toString(36).toUpperCase().slice(-6)}`)
     setStep('done')
   }
 
   const amenityList = useMemo(() => {
     const own = selection?.pkg.amenities ?? []
-    return Array.from(new Set([...own, ...INCLUDED_AMENITIES]))
-  }, [selection])
+    return Array.from(new Set([...own.map((a) => t.amenities[a] ?? a), ...t.standardAmenities]))
+  }, [selection, t])
 
   const chatHasReply = messages.length > 1
+  const suiteCopy = suite ? t.suites[suite.id] : null
 
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-teal-300/20 bg-[#050a14] text-slate-100 shadow-[0_24px_80px_rgba(0,0,0,0.85)]">
@@ -595,20 +638,40 @@ export function VoyageDashboard() {
         <div className="flex shrink-0 items-center gap-2 sm:gap-2.5">
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-1 font-mono text-[10px] font-semibold text-amber-300 shadow-[0_0_12px_rgba(251,191,36,0.15)] sm:px-3">
             <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" aria-hidden="true" />
-            <span className="sm:hidden">MVP</span>
-            <span className="hidden sm:inline">MVP PROTOTYPE · IN ACTIVE DEVELOPMENT</span>
+            <span className="sm:hidden">{t.mvpShort}</span>
+            <span className="hidden sm:inline">{t.mvpLong}</span>
           </span>
-          <div className="hidden items-center rounded-lg border border-teal-300/20 bg-teal-400/5 p-0.5 text-[11px] font-mono sm:flex">
-            <span className="rounded bg-teal-400 px-1.5 py-0.5 font-bold text-[#050a14]">EN</span>
-            <span className="px-1.5 py-0.5 text-slate-400">RU</span>
+          <div
+            role="group"
+            aria-label={t.langSwitchLabel}
+            className="flex items-center rounded-lg border border-teal-300/20 bg-teal-400/5 p-0.5 font-mono text-[10px] sm:text-[11px]"
+          >
+            {LANGS.map((code) => {
+              const active = code === lang
+              return (
+                <button
+                  key={code}
+                  type="button"
+                  lang={code}
+                  aria-pressed={active}
+                  onClick={() => chooseLang(code)}
+                  className={`rounded px-1.5 py-0.5 transition ${
+                    active ? 'bg-teal-400 font-bold text-[#050a14]' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {code.toUpperCase()}
+                </button>
+              )
+            })}
           </div>
           <a
             href={voyageLinks.repo}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-800/70 px-2.5 py-1 text-[11px] text-slate-200 transition hover:border-teal-400/50 hover:text-white"
+            aria-label={t.githubLabel}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-700/80 bg-slate-800/70 px-2 py-1 text-[11px] text-slate-200 transition hover:border-teal-400/50 hover:text-white sm:px-2.5"
           >
-            GitHub
+            <span className="hidden sm:inline">{t.githubLabel}</span>
             <ExternalLink className="size-3 text-slate-400" aria-hidden="true" />
           </a>
         </div>
@@ -626,29 +689,27 @@ export function VoyageDashboard() {
 
             <div className="flex flex-wrap items-center justify-center gap-2">
               <span className="rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-0.5 font-mono text-[10px] uppercase tracking-wider text-teal-300">
-                <span className="hidden sm:inline">AUTONOMOUS LUXURY TRAVEL · </span>24/7 CONCIERGE
+                <span className="hidden sm:inline">{t.heroEyebrowLead}</span>
+                {t.heroEyebrowTail}
               </span>
               <span className="rounded-full border border-amber-400/40 bg-amber-400/15 px-3 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-300 shadow-[0_0_14px_rgba(251,191,36,0.2)]">
-                MVP STAGE · ACTIVE DEVELOPMENT
+                {t.heroStageBadge}
               </span>
             </div>
 
             <h2 className="mt-4 text-[28px] font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl lg:text-6xl">
-              Voyage AI.
+              {t.heroTitleBrand}
               <br />
               <span className="bg-gradient-to-r from-teal-200 via-cyan-300 to-sky-400 bg-clip-text text-transparent">
-                Your Autonomous
+                {t.heroTitleLine1}
                 <br />
-                Travel Concierge
+                {t.heroTitleLine2}
               </span>
             </h2>
 
             <p className="mx-auto mt-4 max-w-2xl text-[13px] leading-relaxed text-slate-300 sm:text-base">
-              Bespoke itinerary curation powered by Google Gemini. Direct roundtrip flights, handpicked 5-star suites,
-              and transparent pricing in USD &amp; KZT with zero commission markups.{' '}
-              <span className="font-semibold text-amber-300">
-                (Voyage AI is currently in active development: this is an interactive MVP prototype).
-              </span>
+              {t.heroDesc}{' '}
+              <span className="font-semibold text-amber-300">{t.heroMvpNote}</span>
             </p>
 
             <div className="mt-5 flex justify-center sm:mt-6">
@@ -657,7 +718,7 @@ export function VoyageDashboard() {
                 onClick={() => curationRef.current?.scrollIntoView({ behavior: 'smooth' })}
                 className="inline-flex items-center gap-2 rounded-xl bg-teal-400 px-6 py-3 text-sm font-bold text-[#050a14] shadow-[0_0_24px_rgba(45,212,191,0.4)] transition hover:bg-teal-300 hover:shadow-[0_0_32px_rgba(45,212,191,0.6)]"
               >
-                Start Curation <span aria-hidden="true">→</span>
+                {t.heroCta} <span aria-hidden="true">→</span>
               </button>
             </div>
 
@@ -665,25 +726,25 @@ export function VoyageDashboard() {
               <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-3 sm:p-4">
                 <div className="text-xl font-bold text-white sm:text-3xl">24/7</div>
                 <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400 sm:text-[10px]">
-                  AUTONOMOUS CONCIERGE
+                  {t.statConcierge}
                 </div>
               </div>
               <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-3 sm:p-4">
                 <div className="text-xl font-bold text-white sm:text-3xl">50</div>
                 <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400 sm:text-[10px]">
-                  ELITE WORLD RESORTS
+                  {t.statResorts}
                 </div>
               </div>
               <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-3 sm:p-4">
                 <div className="text-xl font-bold text-white sm:text-3xl">10</div>
                 <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400 sm:text-[10px]">
-                  TOP GLOBAL DESTINATIONS
+                  {t.statDestinations}
                 </div>
               </div>
               <div className="rounded-xl border border-teal-300/15 bg-[#0b162a]/80 p-3 sm:p-4">
                 <div className="text-xl font-bold text-white sm:text-3xl">0%</div>
                 <div className="mt-1 font-mono text-[9px] uppercase tracking-wider text-slate-400 sm:text-[10px]">
-                  HIDDEN COMMISSION
+                  {t.statCommission}
                 </div>
               </div>
             </div>
@@ -692,30 +753,27 @@ export function VoyageDashboard() {
           {/* Intro */}
           <header ref={curationRef} className="flex flex-col gap-3 pt-2">
             <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-amber-400">
-              VOYAGE AI CONCIERGE
+              {t.introEyebrow}
             </p>
-            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-4xl">Where shall we take you?</h2>
-            <p className="max-w-2xl text-sm leading-relaxed text-slate-400">
-              A single conversational prompt replaces tedious multi-step search engines. Voyage AI interprets your
-              travel style, selects non-stop flight routes, and matches real suites.
-            </p>
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-4xl">{t.introTitle}</h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-slate-400">{t.introDesc}</p>
           </header>
 
           {/* Natural Language Extraction */}
           <section
-            aria-label="Natural language extraction"
+            aria-label={t.panelAria}
             className="rounded-2xl border border-teal-300/15 bg-[#0b1426] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.45)] sm:p-5"
           >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 border-b border-teal-300/10 pb-3 text-[11px]">
               <div className="flex items-center gap-2 text-teal-300">
                 <span className="size-1.5 rounded-full bg-teal-400" aria-hidden="true" />
-                <span>Voyage AI Active · Real-time Parameter Extraction</span>
+                <span>{t.panelStatus}</span>
                 <span className="rounded border border-amber-400/40 bg-amber-400/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-amber-300">
                   MVP
                 </span>
               </div>
               <span className="flex items-center gap-3 text-slate-400">
-                <span className="hidden sm:inline">Natural Language Parsing</span>
+                <span className="hidden sm:inline">{t.panelSub}</span>
                 {chatHasReply ? (
                   <button
                     type="button"
@@ -723,7 +781,7 @@ export function VoyageDashboard() {
                     className="inline-flex items-center gap-1 rounded border border-slate-700 px-2 py-0.5 text-slate-300 transition hover:border-teal-400/50 hover:text-white"
                   >
                     <RefreshCw className="size-3" aria-hidden="true" />
-                    Reset
+                    {t.reset}
                   </button>
                 ) : null}
               </span>
@@ -738,11 +796,11 @@ export function VoyageDashboard() {
               {messages.map((m) => (
                 <Bubble key={m.id} message={m} />
               ))}
-              {isPending ? <PendingBubble /> : null}
+              {isPending ? <PendingBubble label={t.pendingAria} /> : null}
             </div>
 
             <div className="mt-4 flex flex-col gap-1.5">
-              {CHIPS.map((chip) => (
+              {t.chips.map((chip) => (
                 <button
                   key={chip.label}
                   type="button"
@@ -760,8 +818,8 @@ export function VoyageDashboard() {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                aria-label="Describe your trip"
-                placeholder="e.g. Solo luxury escape to Dubai from Astana for 7 nights, 5★, $3,500 budget"
+                aria-label={t.inputAria}
+                placeholder={t.placeholder}
                 className="min-w-0 flex-1 rounded-xl border border-teal-300/20 bg-[#08101f] px-4 py-3 text-base text-slate-100 sm:text-sm placeholder-slate-500 outline-none transition focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
               />
               <button
@@ -769,7 +827,7 @@ export function VoyageDashboard() {
                 disabled={isPending || !input.trim()}
                 className="shrink-0 rounded-xl bg-teal-400 px-4 py-3 text-sm font-bold text-[#050a14] transition hover:bg-teal-300 disabled:opacity-40 sm:px-5"
               >
-                Send <span aria-hidden="true">↗</span>
+                {t.send} <span aria-hidden="true">↗</span>
               </button>
             </form>
           </section>
@@ -780,20 +838,20 @@ export function VoyageDashboard() {
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="font-mono text-[11px] font-semibold uppercase tracking-widest text-amber-400">
-                    Bespoke Selection
+                    {t.resultsEyebrow}
                   </p>
                   <h3 id="voyage-results-title" className="mt-1 text-2xl font-bold sm:text-3xl tracking-tight text-white">
-                    Top {packages.length} Tailored Packages
+                    {t.resultsTitle(packages.length)}
                   </h3>
                 </div>
                 <span className="rounded-full border border-teal-300/30 bg-teal-400/10 px-3 py-1 text-xs text-teal-300">
-                  Top {packages.length} Bespoke Matches
+                  {t.resultsBadge(packages.length)}
                 </span>
               </div>
 
               <div className="grid gap-5 md:grid-cols-2">
                 {packages.map((pkg) => (
-                  <PackageCard key={pkg.id} pkg={pkg} onExplore={explore} />
+                  <PackageCard key={pkg.id} pkg={pkg} t={t} lang={lang} onExplore={explore} />
                 ))}
               </div>
             </section>
@@ -801,28 +859,28 @@ export function VoyageDashboard() {
 
           <footer className="flex flex-col items-center gap-1.5 border-t border-teal-300/10 pt-6 pb-2 text-center text-xs text-slate-400">
             <p className="flex flex-wrap items-center justify-center gap-2 font-semibold text-slate-200">
-              <span>Voyage<span className="text-teal-400">AI</span> · Autonomous Travel Concierge</span>
+              <span>
+                Voyage<span className="text-teal-400">AI</span> · {t.footerTagline}
+              </span>
               <span className="rounded border border-amber-400/40 bg-amber-400/15 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-300">
-                MVP PROTOTYPE
+                {t.footerBadge}
               </span>
             </p>
-            <p>Bespoke itineraries, direct flights and transparent pricing with zero commission markup.</p>
-            <p className="max-w-xl text-[11px] text-amber-300/80">
-              Voyage AI is currently in active development (MVP stage). Live GDS flight feeds and autonomous reservation pipelines are continuously updated.
-            </p>
+            <p>{t.footerDesc}</p>
+            <p className="max-w-xl text-[11px] text-amber-300/80">{t.footerMvpNote}</p>
             <a href="/projects/voyage-ai" className="mt-1 font-mono text-[11px] text-teal-300 underline underline-offset-4 hover:text-teal-200">
-              Voyage AI case study
+              {t.caseStudy}
             </a>
           </footer>
         </div>
       </div>
 
       {/* Modals stay inside the dashboard so they stay inside the laptop display */}
-      {step !== 'closed' && selection && suite ? (
+      {step !== 'closed' && selection && suite && suiteCopy ? (
         <div
           role="dialog"
           aria-modal="true"
-          aria-label={step === 'suites' ? `${selection.pkg.name} suites` : 'Confirm reservation with concierge'}
+          aria-label={step === 'suites' ? t.suitesDialog(selection.pkg.name) : t.confirmDialog}
           className="absolute inset-0 z-40 flex items-center justify-center bg-[#02050c]/85 p-3 sm:p-6"
           onMouseDown={(e) => {
             if (e.target === e.currentTarget) closeModal()
@@ -845,25 +903,26 @@ export function VoyageDashboard() {
                   <button
                     type="button"
                     onClick={closeModal}
-                    aria-label="Close"
+                    aria-label={t.close}
                     className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-black/60 text-white transition hover:bg-black/80"
                   >
                     <X className="size-4" aria-hidden="true" />
                   </button>
                   <div className="absolute bottom-3 left-5 right-5">
                     <h4 className="text-xl font-bold text-white">{selection.pkg.name}</h4>
-                    <p className="text-xs text-slate-300">{selection.pkg.place}</p>
+                    <p className="text-xs text-slate-300">{placeText(selection.pkg, t)}</p>
                   </div>
                 </div>
 
                 <div className="grid gap-6 p-5 md:grid-cols-5">
                   <div className="md:col-span-3">
                     <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-slate-400">
-                      Select your suite
+                      {t.selectSuite}
                     </p>
                     <div className="flex flex-col gap-2">
                       {SUITES.map((s) => {
                         const active = s.id === suiteId
+                        const copy = t.suites[s.id]
                         return (
                           <button
                             key={s.id}
@@ -877,11 +936,11 @@ export function VoyageDashboard() {
                             }`}
                           >
                             <span>
-                              <span className="block text-sm font-semibold text-white">{s.name}</span>
-                              <span className="block text-[11px] text-slate-400">{s.detail}</span>
+                              <span className="block text-sm font-semibold text-white">{copy.name}</span>
+                              <span className="block text-[11px] text-slate-400">{copy.detail}</span>
                             </span>
                             <span className="shrink-0 font-mono text-xs text-teal-300">
-                              {s.extraKzt === 0 ? 'Included' : `+${formatKzt(s.extraKzt)}`}
+                              {s.extraKzt === 0 ? t.suiteIncluded : `+${formatKzt(s.extraKzt, lang)}`}
                             </span>
                           </button>
                         )
@@ -891,7 +950,7 @@ export function VoyageDashboard() {
 
                   <div className="md:col-span-2">
                     <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-slate-400">
-                      Included amenities
+                      {t.includedAmenities}
                     </p>
                     <ul className="flex flex-col gap-1.5">
                       {amenityList.map((a) => (
@@ -907,10 +966,10 @@ export function VoyageDashboard() {
                 <div className="flex flex-wrap items-center justify-between gap-3 border-t border-teal-300/10 bg-[#08101f] px-5 py-4">
                   <div>
                     <p className="text-[11px] text-slate-400">
-                      Departure {selection.dateLabel} · {selection.mealCode} · {suite.name}
+                      {t.departure} {selection.dateLabel} · {selection.mealCode} · {suiteCopy.name}
                     </p>
                     <p className="text-xl font-bold text-white">
-                      {formatKzt(finalTotal)}{' '}
+                      {formatKzt(finalTotal, lang)}{' '}
                       <span className="text-sm font-semibold text-teal-300">({formatUsd(finalTotal)})</span>
                     </p>
                   </div>
@@ -919,7 +978,7 @@ export function VoyageDashboard() {
                     onClick={() => setStep('confirm')}
                     className="rounded-xl bg-teal-400 px-5 py-2.5 text-sm font-bold text-[#050a14] transition hover:bg-teal-300"
                   >
-                    Reserve with Concierge
+                    {t.reserve}
                   </button>
                 </div>
               </div>
@@ -929,13 +988,13 @@ export function VoyageDashboard() {
               <form onSubmit={confirm} className="flex flex-col gap-4 p-5 sm:p-6" noValidate>
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-mono text-[11px] uppercase tracking-widest text-amber-400">Final step</p>
-                    <h4 className="mt-1 text-xl font-bold text-white">Confirm Reservation with Concierge</h4>
+                    <p className="font-mono text-[11px] uppercase tracking-widest text-amber-400">{t.finalStep}</p>
+                    <h4 className="mt-1 text-xl font-bold text-white">{t.confirmTitle}</h4>
                   </div>
                   <button
                     type="button"
                     onClick={closeModal}
-                    aria-label="Close"
+                    aria-label={t.close}
                     className="flex size-8 items-center justify-center rounded-full bg-slate-800 text-white transition hover:bg-slate-700"
                   >
                     <X className="size-4" aria-hidden="true" />
@@ -944,29 +1003,29 @@ export function VoyageDashboard() {
 
                 <dl className="grid gap-2 rounded-xl border border-teal-300/15 bg-[#08101f] p-4 text-sm sm:grid-cols-2">
                   <div>
-                    <dt className="text-[11px] text-slate-400">Hotel</dt>
+                    <dt className="text-[11px] text-slate-400">{t.hotel}</dt>
                     <dd className="font-medium text-white">{selection.pkg.name}</dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] text-slate-400">Suite</dt>
-                    <dd className="font-medium text-white">{suite.name}</dd>
+                    <dt className="text-[11px] text-slate-400">{t.suite}</dt>
+                    <dd className="font-medium text-white">{suiteCopy.name}</dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] text-slate-400">Flight</dt>
+                    <dt className="text-[11px] text-slate-400">{t.flight}</dt>
                     <dd className="font-medium text-white">
-                      {selection.pkg.flight.fromCode} → {selection.pkg.flight.toCode}, departure {selection.dateLabel}
+                      {t.flightSummary(selection.pkg.flight.fromCode, selection.pkg.flight.toCode, selection.dateLabel)}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[11px] text-slate-400">Total</dt>
+                    <dt className="text-[11px] text-slate-400">{t.total}</dt>
                     <dd className="font-bold text-teal-300">
-                      {formatKzt(finalTotal)} ({formatUsd(finalTotal)})
+                      {formatKzt(finalTotal, lang)} ({formatUsd(finalTotal)})
                     </dd>
                   </div>
                 </dl>
 
                 <label className="flex flex-col gap-1.5 text-sm">
-                  <span className="text-slate-300">Phone / WhatsApp number</span>
+                  <span className="text-slate-300">{t.phoneLabel}</span>
                   <input
                     type="tel"
                     inputMode="tel"
@@ -974,10 +1033,10 @@ export function VoyageDashboard() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+7 700 000 00 00"
-                    aria-invalid={phoneError !== null}
+                    aria-invalid={phoneError}
                     className="rounded-xl border border-teal-300/25 bg-[#08101f] px-4 py-3 text-slate-100 placeholder-slate-500 outline-none transition focus:border-teal-300 focus:ring-1 focus:ring-teal-300"
                   />
-                  {phoneError ? <span className="text-xs text-rose-300">{phoneError}</span> : null}
+                  {phoneError ? <span className="text-xs text-rose-300">{t.phoneError}</span> : null}
                 </label>
 
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -986,13 +1045,13 @@ export function VoyageDashboard() {
                     onClick={() => setStep('suites')}
                     className="rounded-xl border border-slate-700 px-4 py-2.5 text-sm text-slate-300 transition hover:border-teal-400/50 hover:text-white"
                   >
-                    Back to suites
+                    {t.backToSuites}
                   </button>
                   <button
                     type="submit"
                     className="rounded-xl bg-teal-400 px-5 py-2.5 text-sm font-bold text-[#050a14] transition hover:bg-teal-300"
                   >
-                    Send Reservation Request
+                    {t.sendRequest}
                   </button>
                 </div>
               </form>
@@ -1003,18 +1062,17 @@ export function VoyageDashboard() {
                 <span className="flex size-12 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-400/10">
                   <ShieldCheck className="size-6 text-emerald-300" aria-hidden="true" />
                 </span>
-                <h4 className="text-xl font-bold text-white">Reservation Request Received</h4>
+                <h4 className="text-xl font-bold text-white">{t.successTitle}</h4>
                 <p className="max-w-md text-sm leading-relaxed text-slate-300">
-                  A Voyage AI concierge will contact you at {phone.trim()} to finalise your stay at{' '}
-                  {selection.pkg.name} ({suite.name}).
+                  {t.successDesc(phone.trim(), selection.pkg.name, suiteCopy.name)}
                 </p>
-                <p className="font-mono text-xs text-teal-300">Reference {reference}</p>
+                <p className="font-mono text-xs text-teal-300">{t.reference(reference)}</p>
                 <button
                   type="button"
                   onClick={closeModal}
                   className="mt-2 rounded-xl bg-teal-400 px-5 py-2.5 text-sm font-bold text-[#050a14] transition hover:bg-teal-300"
                 >
-                  Back to packages
+                  {t.backToPackages}
                 </button>
               </div>
             ) : null}

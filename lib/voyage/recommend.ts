@@ -22,6 +22,7 @@ import {
   type CatalogHotel,
   type Country,
   type FlightQuote,
+  type Lang,
   type MealType,
   type Origin,
   type Recommendation,
@@ -64,13 +65,10 @@ const FLIGHT_ROUTES: Record<Country, FlightRoute> = {
 }
 
 /** Editorial badges, assigned in order to the curated picks. */
-const BADGES = [
-  'Top Recommended',
-  'Highest Rating',
-  'Beachfront Sanctuary',
-  'Best Value Package',
-  'Ultra Luxury Retreat',
-] as const
+const BADGES: Readonly<Record<Lang, readonly string[]>> = {
+  en: ['Top Recommended', 'Highest Rating', 'Beachfront Sanctuary', 'Best Value Package', 'Ultra Luxury Retreat'],
+  ru: ['Лучший выбор', 'Высокий рейтинг', 'Первая линия у моря', 'Лучшая цена за пакет', 'Премиальный отдых'],
+}
 
 /** Minimum realistic package price per 7 nights (hotel + flight), KZT. */
 const MIN_PACKAGE_7N_KZT: Record<Country, { minKzt: number; label: string }> = {
@@ -227,7 +225,26 @@ export async function quoteFlight(
 
 // ──────────────────────────── pricing ──────────────────────────────
 
-function guestsBadge(adults: number, children: number): string {
+/** Russian plural form: `one` for 1, 21; `few` for 2-4, 22-24; `many` otherwise. */
+export function pluralRu(n: number, one: string, few: string, many: string): string {
+  const mod10 = n % 10
+  const mod100 = n % 100
+  if (mod10 === 1 && mod100 !== 11) return one
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few
+  return many
+}
+
+function guestsBadgeRu(adults: number, children: number): string {
+  const passengers = adults + children
+  if (passengers === 1) return 'Соло-путешественник · 1 взрослый'
+  if (adults === 2 && children === 0) return 'Для двоих · 2 взрослых'
+  if (children > 0)
+    return `Семейный тур · ${adults} ${pluralRu(adults, 'взрослый', 'взрослых', 'взрослых')}, ${children} ${pluralRu(children, 'ребёнок', 'ребёнка', 'детей')}`
+  return `Группа · ${adults} ${pluralRu(adults, 'гость', 'гостя', 'гостей')}`
+}
+
+function guestsBadge(adults: number, children: number, lang: Lang = 'en'): string {
+  if (lang === 'ru') return guestsBadgeRu(adults, children)
   const passengers = adults + children
   if (passengers === 1) return 'Solo Traveler · 1 Adult'
   if (adults === 2 && children === 0) return 'Couple Escape · 2 Adults'
@@ -261,8 +278,11 @@ function filterCatalog(req: SearchRequest): CatalogHotel[] {
   )
 }
 
-/** Searches + prices every matching property. Flight quotes are fetched once per destination, concurrently. */
-export async function searchHotels(req: SearchRequest): Promise<Recommendation[]> {
+/**
+ * Searches + prices every matching property. Flight quotes are fetched once per destination, concurrently.
+ * `lang` only affects the human-readable fields (badge, breakdown, guests badge).
+ */
+export async function searchHotels(req: SearchRequest, lang: Lang = 'en'): Promise<Recommendation[]> {
   const passengers = req.adults + req.children
   const matches = filterCatalog(req)
 
@@ -295,15 +315,18 @@ export async function searchHotels(req: SearchRequest): Promise<Recommendation[]
         rating: h.rating,
         reviews: h.reviews,
         matchScore,
-        badge: BADGES[0],
+        badge: BADGES[lang][0],
         amenities: [...h.amenities],
         hotelTotalKzt: hotelKzt,
         flightKzt: flight.priceKzt,
         totalKzt,
         totalUsd: Math.round(totalKzt / USD_TO_KZT),
         perNightKzt: Math.round(totalKzt / req.nights),
-        breakdown: `Hotel (${req.nights}n): ${formatKzt(hotelKzt)} + Roundtrip Flight: ${formatKzt(flight.priceKzt)}`,
-        guestsBadge: guestsBadge(req.adults, req.children),
+        breakdown:
+          lang === 'ru'
+            ? `Отель (${req.nights} ${pluralRu(req.nights, 'ночь', 'ночи', 'ночей')}): ${formatKzt(hotelKzt, 'ru')} + перелёт туда и обратно: ${formatKzt(flight.priceKzt, 'ru')}`
+            : `Hotel (${req.nights}n): ${formatKzt(hotelKzt)} + Roundtrip Flight: ${formatKzt(flight.priceKzt)}`,
+        guestsBadge: guestsBadge(req.adults, req.children, lang),
         flight,
       },
     ]
@@ -317,12 +340,16 @@ export async function searchHotels(req: SearchRequest): Promise<Recommendation[]
  * the best match first, then the cheapest, a beachfront pick, the top-rated and a 5★ VIP pick,
  * topped up by rank. Relaxes star/board filters (never the budget) when fewer than five match.
  */
-export async function curateTopFive(candidates: Recommendation[], req: SearchRequest): Promise<Recommendation[]> {
+export async function curateTopFive(
+  candidates: Recommendation[],
+  req: SearchRequest,
+  lang: Lang = 'en',
+): Promise<Recommendation[]> {
   const pool = candidates.filter((r) => r.totalKzt <= req.budgetKzt)
 
   if (pool.length < MAX_RESULTS) {
     const known = new Set(pool.map((r) => r.id))
-    const relaxed = await searchHotels({ ...req, minStars: null, meal: null })
+    const relaxed = await searchHotels({ ...req, minStars: null, meal: null }, lang)
     for (const r of relaxed) {
       if (!known.has(r.id) && r.totalKzt <= req.budgetKzt) {
         pool.push(r)
@@ -353,12 +380,13 @@ export async function curateTopFive(candidates: Recommendation[], req: SearchReq
     if (!selected.includes(r)) selected.push(r)
   }
 
-  return selected.slice(0, MAX_RESULTS).map((r, i) => ({ ...r, badge: BADGES[i] ?? BADGES[BADGES.length - 1] }))
+  const badges = BADGES[lang]
+  return selected.slice(0, MAX_RESULTS).map((r, i) => ({ ...r, badge: badges[i] ?? badges[badges.length - 1] }))
 }
 
 /** End-to-end: validated request in, curated recommendations out. */
-export async function recommend(req: SearchRequest): Promise<Recommendation[]> {
-  return curateTopFive(await searchHotels(req), req)
+export async function recommend(req: SearchRequest, lang: Lang = 'en'): Promise<Recommendation[]> {
+  return curateTopFive(await searchHotels(req, lang), req, lang)
 }
 
 // ─────────────────────── budget reality & meta ─────────────────────
