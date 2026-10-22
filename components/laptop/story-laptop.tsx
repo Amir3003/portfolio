@@ -153,7 +153,7 @@ function FullscreenToggle({
         type="button"
         onClick={onClose}
         aria-label={`Close ${label}`}
-        className="fixed left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/90 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg"
+        className="fixed left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/90 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg transition-transform duration-150 ease-out active:scale-[0.97]"
         style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <span aria-hidden="true">✕</span> Close
@@ -164,7 +164,7 @@ function FullscreenToggle({
     <button
       type="button"
       onClick={onOpen}
-      className="absolute bottom-4 left-1/2 z-50 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/85 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg pointer-coarse:flex"
+      className="absolute bottom-4 left-1/2 z-50 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/85 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg transition-transform duration-150 ease-out active:scale-[0.97] pointer-coarse:flex"
     >
       Open {label} full screen
       <span aria-hidden="true">↗</span>
@@ -489,10 +489,10 @@ export function StoryLaptop() {
             <h1 className="text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl md:text-4xl">
               17-year-old AI &amp; ML Engineer <span className="whitespace-nowrap">Amir Nagiyev</span>
             </h1>
-            <p className="max-w-xl text-sm leading-relaxed text-neutral-300">
+            <p className="max-w-xl text-pretty text-sm leading-relaxed text-neutral-300">
               Astana, Kazakhstan · Studying at {PROFILE.school}. {PROFILE.focus}
             </p>
-            <p className="max-w-2xl text-xs leading-relaxed text-neutral-400 sm:text-sm">
+            <p className="max-w-2xl text-pretty text-xs leading-relaxed text-neutral-400 sm:text-sm">
               <span className="font-mono text-neutral-300">Interests: </span>
               {PROFILE.reading}
             </p>

@@ -26,21 +26,21 @@ export default function Page() {
         <Contact />
       </main>
       <footer className="border-t border-neutral-800 px-4 py-8">
-        <div className="mx-auto flex max-w-5xl flex-col gap-4 font-mono text-xs text-neutral-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 font-mono text-xs text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
           <p>
             © {new Date().getFullYear()} {legal.operator} · {legal.address}
           </p>
           <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link href="/privacy" className="underline underline-offset-4 hover:text-neutral-200">
+            <Link href="/privacy" className="-my-3 inline-block py-3 underline underline-offset-4 hover:text-neutral-200">
               Privacy
             </Link>
-            <Link href="/terms" className="underline underline-offset-4 hover:text-neutral-200">
+            <Link href="/terms" className="-my-3 inline-block py-3 underline underline-offset-4 hover:text-neutral-200">
               Terms
             </Link>
-            <Link href="/refund" className="underline underline-offset-4 hover:text-neutral-200">
+            <Link href="/refund" className="-my-3 inline-block py-3 underline underline-offset-4 hover:text-neutral-200">
               Refunds
             </Link>
-            <Link href="/privacy#data-request" className="underline underline-offset-4 hover:text-neutral-200">
+            <Link href="/privacy#data-request" className="-my-3 inline-block py-3 underline underline-offset-4 hover:text-neutral-200">
               Data request
             </Link>
             <CookieSettingsButton />

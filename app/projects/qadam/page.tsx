@@ -23,7 +23,6 @@ export default function QadamCase() {
   return (
     <ProjectCase
       project={project}
-      eyebrow="Startup · AI opportunity hub"
       lead="QADAM («Қадам») means step in Kazakh. It finds the grants, hackathons, internships and AI programs a student is actually eligible for, shows what is missing in their CV, and sends the deadlines to Telegram, Discord and KakaoTalk."
       role="Founder: product, design and engineering"
       status="Live beta, public launch in progress"

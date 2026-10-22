@@ -23,7 +23,6 @@ export default function VoyageCase() {
   return (
     <ProjectCase
       project={project}
-      eyebrow="AI agent · travel concierge"
       lead="Voyage AI replaces a stack of search forms with one sentence. Describe the trip, and the agent asks only for what is missing, checks the budget against reality and returns three priced packages with flights, dates and meal plans."
       role="Solo project: agent design, backend and interface"
       status="Interactive MVP, live demo on this site"

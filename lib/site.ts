@@ -61,7 +61,3 @@ export const navItems = [
   { label: 'QADAM', href: '#qadam' },
   { label: 'Contact', href: '#contact' },
 ] as const
-
-export function focusTerminal(): void {
-  // Terminal feature removed
-}

@@ -1,3 +1,4 @@
+import { ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { SectionHeading } from '@/components/section-heading'
@@ -10,7 +11,6 @@ export function ProjectsSection() {
       <div className="mx-auto max-w-5xl">
         <SectionHeading
           id="projects-title"
-          eyebrow="Projects"
           title="Case studies."
           description="What each project solves, how it is built and where it stands."
         />
@@ -19,7 +19,7 @@ export function ProjectsSection() {
             <li key={p.slug}>
               <Link
                 href={p.path}
-                className="group flex h-full flex-col border border-neutral-800 bg-neutral-950 transition-colors hover:border-neutral-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400"
+                className="group flex h-full flex-col border border-neutral-800 bg-neutral-950 transition-[border-color,transform] duration-150 ease-out hover:border-neutral-600 active:scale-[0.99] motion-reduce:active:scale-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400"
               >
                 <Image
                   src={p.image}
@@ -31,10 +31,14 @@ export function ProjectsSection() {
                   className="h-auto w-full border-b border-neutral-800"
                 />
                 <span className="flex flex-1 flex-col gap-2 p-5">
-                  <span className="text-lg font-medium text-neutral-50 group-hover:text-lime-300">
+                  <span className="flex items-center justify-between gap-3 text-lg font-medium text-neutral-50 group-hover:text-lime-300">
                     {p.name} case study
+                    <ArrowRight
+                      className="size-4 shrink-0 text-neutral-500 transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:text-lime-300 motion-reduce:transition-none"
+                      aria-hidden="true"
+                    />
                   </span>
-                  <span className="text-sm leading-relaxed text-neutral-400">{p.description}</span>
+                  <span className="text-pretty text-sm leading-relaxed text-neutral-400">{p.description}</span>
                 </span>
               </Link>
             </li>

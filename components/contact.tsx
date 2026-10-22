@@ -1,5 +1,6 @@
 import { SectionHeading } from '@/components/section-heading'
 import { SectionVignette } from '@/components/section-vignette'
+import { ArrowRight, ArrowUpRight } from 'lucide-react'
 import { contactGroups } from '@/lib/site'
 
 export function Contact() {
@@ -9,7 +10,6 @@ export function Contact() {
       <div className="mx-auto max-w-3xl">
         <SectionHeading
           id="contact-title"
-          eyebrow="Contact"
           title="Get in touch."
           description="Write to me directly, or reach QADAM through its work accounts. Freelance projects through Freelance.kz and Freelancer."
         />
@@ -25,12 +25,16 @@ export function Contact() {
                       <a
                         href={s.href}
                         {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-                        className="group flex items-center justify-between gap-4 px-4 py-4 text-neutral-200 transition-colors hover:bg-neutral-900 hover:text-lime-300 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-lime-400"
+                        className="group flex items-center justify-between gap-4 px-4 py-4 text-neutral-200 transition-colors hover:bg-neutral-900 hover:text-lime-300 active:bg-neutral-900 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-lime-400"
                       >
                         <span className="text-base font-medium">{s.label}</span>
-                        <span className="flex min-w-0 items-center gap-2 font-mono text-xs text-neutral-500 group-hover:text-neutral-300">
+                        <span className="flex min-w-0 items-center gap-2 font-mono text-xs text-neutral-400 group-hover:text-neutral-200">
                           <span className="truncate">{s.handle}</span>
-                          <span aria-hidden="true">{external ? '↗' : '→'}</span>
+                          {external ? (
+                            <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
+                          ) : (
+                            <ArrowRight className="size-3.5 shrink-0" aria-hidden="true" />
+                          )}
                         </span>
                       </a>
                     </li>
