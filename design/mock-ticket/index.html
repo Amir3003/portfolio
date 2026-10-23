@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amir Nagiyev</title>
+<link rel="preload" href="fonts/tiktoksans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="sky.css">
+<link rel="stylesheet" href="ticket.css">
+<style>
+  html, body { margin: 0; }
+  body { overflow-x: hidden; color: #0C2633; font-family: "TikTok Sans", system-ui, sans-serif; }
+  .bar { position: absolute; inset: 0 0 auto; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: 20px 32px; }
+  .bar a { color: #0C2633; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .mono { width: 44px; height: 44px; border-radius: 50%; background: #0C2633; color: #F6F4EE !important; display: grid; place-items: center; font-weight: 800; }
+  .bar nav { display: flex; gap: 28px; }
+  .hero { position: relative; z-index: 1; height: 220vh; }
+  .hero-pin { position: sticky; top: 0; height: 100vh; display: grid; place-content: center; justify-items: center; gap: 22px; padding: 0 16px; box-sizing: border-box; }
+  .hero h1 { margin: 0; font-size: clamp(18px, 1.6vw, 22px); font-weight: 600; letter-spacing: -0.01em; color: #0C2633; text-align: center; }
+  #ticket { width: min(920px, calc(100vw - 32px)); }
+  .words { position: relative; z-index: 1; padding: 10vh 32px 30vh; }
+  .words .big { font-stretch: 150%; font-weight: 900; font-size: clamp(64px, 15vw, 240px); line-height: .86; letter-spacing: -0.04em; color: #0C2633; margin: 0; }
+  .words .big.right { text-align: right; color: #F6F4EE; }
+  .words p { max-width: 34ch; font-size: 20px; line-height: 1.45; margin: 18px 0 14vh; }
+  .words p.right { margin-left: auto; text-align: right; color: #F6F4EE; }
+  @media (max-width: 640px) { .bar nav { display: none; } .bar { padding: 16px; } .hero-pin { place-content: start center; padding-top: 76px; gap: 14px; } .hero h1 { font-size: 17px; } .words { padding: 8vh 16px 20vh; } }
+</style>
+</head>
+<body>
+  <div class="sky" aria-hidden="true"></div>
+  <header class="bar"><a class="mono" href="#">AN</a><nav><a href="#">Work</a><a href="#">About</a><a href="#">Contact</a></nav></header>
+  <main>
+    <section class="hero">
+      <div class="hero-pin">
+        <h1>Amir Nagiyev, AI &amp; ML developer from Astana</h1>
+        <div id="ticket"></div>
+      </div>
+    </section>
+    <section class="words">
+      <h2 class="big">VOYAGE AI</h2>
+      <p>One sentence in, three priced trips out. Flights from Astana, fifty resorts in ten countries.</p>
+      <h2 class="big right">QADAM</h2>
+      <p class="right">Qadam means step. A radar for the grants, hackathons and internships a student can actually get.</p>
+    </section>
+  </main>
+  <script type="module">
+    import { initSky } from './sky.js';
+    import { initTicket } from './ticket.js';
+    initSky(document.querySelector('.sky'));
+    window.ticket = initTicket(document.getElementById('ticket'));
+  </script>
+</body>
+</html>

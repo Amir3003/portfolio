@@ -7,6 +7,8 @@
 @theme inline {
   --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-code), ui-monospace, SFMono-Regular, monospace;
+  /* TikTok Sans (variable wdth 75-150, wght 300-900): the boarding pass and large display words. */
+  --font-display: var(--font-tiktok), ui-sans-serif, system-ui, sans-serif;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -255,5 +257,60 @@
   .story-panel[data-fullscreen='true'] > div:first-child {
     border-radius: 0;
     border-width: 0;
+  }
+}
+
+/*
+ * Home hero: the h1 and the boarding pass on a sticky stage. The stage holds for one viewport
+ * while the ticket tears (scroll drives it), then scrolls away into the laptop story.
+ */
+.hero-flight {
+  position: relative;
+  z-index: 1;
+  height: 200vh;
+}
+.hero-flight__pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 22px;
+  padding: 72px 16px 0;
+}
+.hero-flight__title {
+  margin: 0;
+  font-family: var(--font-tiktok), ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(18px, 1.6vw, 22px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #0c2633;
+  text-align: center;
+  text-wrap: balance;
+}
+.hero-flight__ticket {
+  width: min(920px, calc(100vw - 32px));
+}
+@media (max-width: 640px) {
+  .hero-flight__pin {
+    place-content: start center;
+    padding-top: 76px;
+    gap: 14px;
+  }
+  .hero-flight__title {
+    font-size: 17px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-flight {
+    height: auto;
+  }
+  .hero-flight__pin {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    padding-bottom: 48px;
   }
 }

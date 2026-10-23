@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boarding Pass Demo</title>
+<link rel="preload" href="fonts/tiktoksans-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="ticket.css">
+<style>
+  html, body { margin: 0; background: #00AFCA; }
+  body { min-height: 320vh; overflow-x: hidden; }
+  .hero { height: 220vh; }
+  .hero-pin { position: sticky; top: 0; height: 100vh; display: grid; place-items: center; padding: 0 16px; box-sizing: border-box; }
+  #ticket { width: min(920px, 100%); }
+  .after { padding: 80px 16px 160px; text-align: center; font: 600 15px/1.5 "TikTok Sans", system-ui, sans-serif; color: #0C2633; }
+</style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="hero-pin"><div id="ticket"></div></div>
+    </section>
+    <p class="after">Scroll back up to reattach the stub.</p>
+  </main>
+  <script type="module">
+    import { initTicket } from './ticket.js';
+    window.ticket = initTicket(document.getElementById('ticket'));
+  </script>
+</body>
+</html>

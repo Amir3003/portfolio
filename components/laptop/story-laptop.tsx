@@ -111,6 +111,15 @@ const PROFILE = {
 } as const
 
 /**
+ * Story overlays sit on the sky (day turning to dusk), so they are printed like the boarding
+ * pass: ink on paper, with the ticket's drop shadow.
+ */
+const PAPER_CARD =
+  'overflow-hidden rounded-[18px] bg-[#F6F4EE] text-[#0C2633] shadow-[0_26px_44px_-12px_rgba(6,30,42,0.42),0_2px_4px_rgba(6,30,42,0.18)]'
+/** Field label of the ticket: spaced capitals in the darkened sky blue (4.5:1 on paper). */
+const PAPER_LABEL = 'font-display text-[11px] font-semibold uppercase tracking-[0.16em] text-[#006A7A] sm:text-xs'
+
+/**
  * Three columns, one ruled sheet: hairline dividers instead of three floating cards, no icons,
  * no blur. The columns still read left to right as AI, systems, academic.
  */
@@ -118,14 +127,14 @@ function SpecSheet({ id }: { id?: string }) {
   return (
     <div
       id={id}
-      className="grid w-full grid-cols-1 divide-y divide-neutral-800 border-y border-neutral-700 bg-neutral-950/95 text-left md:grid-cols-3 md:divide-x md:divide-y-0"
+      className={`${PAPER_CARD} grid w-full grid-cols-1 divide-y divide-[#0C2633]/12 text-left md:grid-cols-3 md:divide-x md:divide-y-0`}
     >
       {COLUMNS.map((c) => (
         <section key={c.label} className="flex flex-col gap-1 px-4 py-3 sm:gap-2 sm:p-6">
-          <p className="font-mono text-[11px] text-lime-400 sm:text-xs">{c.label}</p>
-          <h3 className="text-[15px] font-medium text-neutral-50 sm:text-lg">{c.title}</h3>
-          <p className="text-[13px] leading-snug text-neutral-300 sm:text-[15px] sm:leading-relaxed">{c.body}</p>
-          <p className="mt-auto pt-1 font-mono text-[11px] text-neutral-500 sm:pt-2 sm:text-xs">{c.tags}</p>
+          <p className={PAPER_LABEL}>{c.label}</p>
+          <h3 className="font-display text-[15px] font-bold text-[#0C2633] sm:text-lg">{c.title}</h3>
+          <p className="text-[13px] leading-snug text-[#0C2633]/80 sm:text-[15px] sm:leading-relaxed">{c.body}</p>
+          <p className="mt-auto pt-1 font-mono text-[11px] text-[#0C2633]/60 sm:pt-2 sm:text-xs">{c.tags}</p>
         </section>
       ))}
     </div>
@@ -407,20 +416,20 @@ export function StoryLaptop() {
   if (useFallback) {
     return (
       <div className="relative mx-auto flex max-w-6xl flex-col gap-16 px-4 py-24">
-        <div id="about" className="flex flex-col items-start gap-6 pt-12">
-          <p className="font-mono text-xs text-neutral-400">Astana, Kazakhstan · Undergraduate student</p>
-          <h1 className="text-4xl font-semibold tracking-tight text-neutral-50 sm:text-5xl md:text-6xl">
+        <div id="about" className={`${PAPER_CARD} flex flex-col items-start gap-5 px-6 py-8 sm:px-10 sm:py-10`}>
+          <p className={PAPER_LABEL}>Astana, Kazakhstan · Undergraduate student</p>
+          <h2 className="font-display text-3xl font-extrabold tracking-tight text-[#0C2633] sm:text-5xl">
             17-year-old AI & ML Engineer <span className="whitespace-nowrap">Amir Nagiyev</span>
-          </h1>
-          <p className="max-w-xl text-lg leading-relaxed text-neutral-400">
+          </h2>
+          <p className="max-w-xl text-lg leading-relaxed text-[#0C2633]/80">
             Building neural networks on top of a low-level mindset: from tensor graphs in PyTorch to
             zero-allocation hot paths in Go.
           </p>
-          <p className="max-w-2xl text-base leading-relaxed text-neutral-300">
+          <p className="max-w-2xl text-base leading-relaxed text-[#0C2633]/80">
             Studying at {PROFILE.school}. {PROFILE.focus}
           </p>
-          <p className="max-w-2xl text-sm leading-relaxed text-neutral-400">
-            <span className="font-mono text-neutral-300">Interests: </span>
+          <p className="max-w-2xl text-sm leading-relaxed text-[#0C2633]/70">
+            <span className="font-mono text-[#0C2633]">Interests: </span>
             {PROFILE.reading}
           </p>
         </div>
@@ -441,7 +450,6 @@ export function StoryLaptop() {
   return (
     <div ref={containerRef} className="relative" style={{ height: `${STORY_HEIGHT_VH}vh` }}>
       {/* Anchors, placed where each stage holds in the scroll range. */}
-      <div id="top" className="absolute top-0" />
       <div id="about" className="absolute" style={{ top: anchorTop(0.17) }} />
       <div id="architecture" className="absolute" style={{ top: anchorTop(0.33) }} />
       <div id="voyage" className="absolute" style={{ top: anchorTop((VOYAGE_WINDOW.expand[1] + VOYAGE_WINDOW.collapse[0]) / 2) }} />
@@ -474,26 +482,31 @@ export function StoryLaptop() {
           <motion.div
             ref={cueRef}
             style={{ opacity: scrollCueOpacity }}
+            aria-hidden="true"
             className="pointer-events-none absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2"
           >
-            <span className="font-mono text-[11px] text-neutral-400">Scroll to explore</span>
-            <span className="h-5 w-px bg-neutral-600" aria-hidden="true" />
+            {/* Luggage tag under the laptop: the carry-on of the same trip as the ticket above. */}
+            <span className="flex items-center gap-2 rounded-full bg-[#F6F4EE] px-3.5 py-1.5 font-display text-[11px] font-bold uppercase tracking-[0.16em] text-[#0C2633] shadow-[0_8px_18px_-6px_rgba(6,30,42,0.4)]">
+              <span className="size-1.5 rounded-full bg-[#FEC50C]" />
+              Carry-on · AN 2029
+            </span>
+            <span className="h-5 w-px bg-[#0C2633]/40" />
           </motion.div>
 
           {/* Stage 1: outer lid and profile */}
           <motion.div
             style={{ opacity: stage1Opacity, y: stage1Y, pointerEvents: stage1Events }}
-            className="absolute inset-x-4 top-[13vh] mx-auto flex max-w-3xl flex-col items-center gap-3 text-center sm:top-[19vh]"
+            className={`${PAPER_CARD} absolute inset-x-4 top-[11vh] mx-auto flex max-w-2xl flex-col items-center gap-2.5 px-5 py-5 text-center sm:top-[15vh] sm:gap-3 sm:px-8 sm:py-7`}
           >
-            <p className="font-mono text-xs text-lime-400">Profile</p>
-            <h1 className="text-2xl font-semibold tracking-tight text-neutral-50 sm:text-3xl md:text-4xl">
+            <p className={PAPER_LABEL}>Profile</p>
+            <h2 className="font-display text-xl font-extrabold leading-tight tracking-tight text-[#0C2633] sm:text-3xl">
               17-year-old AI &amp; ML Engineer <span className="whitespace-nowrap">Amir Nagiyev</span>
-            </h1>
-            <p className="max-w-xl text-pretty text-sm leading-relaxed text-neutral-300">
+            </h2>
+            <p className="max-w-xl text-pretty text-sm leading-relaxed text-[#0C2633]/80">
               Astana, Kazakhstan · Studying at {PROFILE.school}. {PROFILE.focus}
             </p>
-            <p className="max-w-2xl text-pretty text-xs leading-relaxed text-neutral-400 sm:text-sm">
-              <span className="font-mono text-neutral-300">Interests: </span>
+            <p className="max-w-2xl text-pretty text-xs leading-relaxed text-[#0C2633]/70 sm:text-sm">
+              <span className="font-mono text-[#0C2633]">Interests: </span>
               {PROFILE.reading}
             </p>
           </motion.div>
@@ -503,7 +516,7 @@ export function StoryLaptop() {
             style={{ opacity: stage2Opacity, y: stage2Y, pointerEvents: stage2Events }}
             className="absolute inset-x-4 top-[11vh] mx-auto flex max-w-6xl flex-col items-center gap-3 sm:top-[19vh] sm:gap-4"
           >
-            <h2 className="text-balance text-center text-xl font-semibold tracking-tight text-neutral-100 sm:text-3xl">
+            <h2 className="text-balance rounded-full bg-[#0C2633] px-5 py-2 text-center font-display text-base font-extrabold tracking-tight text-[#F6F4EE] shadow-[0_10px_24px_-10px_rgba(6,30,42,0.5)] sm:text-2xl">
               Physical rigor, system architecture
             </h2>
             <SpecSheet />
@@ -513,10 +526,10 @@ export function StoryLaptop() {
           <motion.a
             href="#contact"
             style={{ opacity: contactOpacity, pointerEvents: contactEvents }}
-            className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 font-mono text-xs text-neutral-300 hover:text-lime-400 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-lime-400"
+            className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 font-display text-xs font-semibold uppercase tracking-[0.16em] text-[#F6F4EE] hover:text-[#FEC50C] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FEC50C]"
           >
             <span>contact</span>
-            <span className="h-5 w-px bg-neutral-600" aria-hidden="true" />
+            <span className="h-5 w-px bg-[#F6F4EE]/50" aria-hidden="true" />
           </motion.a>
         </div>
 
@@ -558,11 +571,13 @@ export function StoryLaptop() {
             wherever the cursor is outside a dashboard scroll pane. */}
         <div
           ref={hintRef}
-          className="pointer-events-none absolute inset-x-0 bottom-5 z-30 text-center font-mono text-[11px] text-neutral-400"
+          className="pointer-events-none absolute inset-x-0 bottom-5 z-30 flex justify-center"
           style={{ opacity: 0 }}
         >
-          <span className="pointer-coarse:hidden">Scroll here, outside the panel, to continue</span>
-          <span className="hidden pointer-coarse:inline">Swipe to continue</span>
+          <span className="rounded-full bg-[#0C2633]/85 px-3.5 py-1 font-mono text-[11px] text-[#F6F4EE]">
+            <span className="pointer-coarse:hidden">Scroll here, outside the panel, to continue</span>
+            <span className="hidden pointer-coarse:inline">Swipe to continue</span>
+          </span>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist, IBM_Plex_Mono, Instrument_Sans, JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 import { AnalyticsGate, ConsentBanner } from '@/components/legal/consent'
 import { LenisProvider } from '@/components/lenis-provider'
 import { PERSON, SITE_DESCRIPTION, SITE_TITLE, SITE_URL, personJsonLd } from '@/lib/seo'
@@ -20,6 +21,17 @@ const qadamMono = JetBrains_Mono({
   weight: ['400', '500', '600', '700'],
   variable: '--font-qadam-mono',
   display: 'swap',
+})
+
+// TikTok Sans, variable width (75 to 150) and weight (300 to 900): the boarding pass and the
+// large display words. Self-hosted from lib/fonts.
+const display = localFont({
+  src: '../lib/fonts/tiktoksans-latin.woff2',
+  weight: '300 900',
+  style: 'normal',
+  variable: '--font-tiktok',
+  display: 'swap',
+  declarations: [{ prop: 'font-stretch', value: '75% 150%' }],
 })
 
 const jsonLd = {
@@ -82,7 +94,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} ${qadamSans.variable} ${qadamMono.variable} bg-neutral-950`}>
+    <html lang="en" className={`${sans.variable} ${mono.variable} ${qadamSans.variable} ${qadamMono.variable} ${display.variable} bg-neutral-950`}>
       <head>
         <meta name="google-site-verification" content="KPmgGOHR8PsHJk7j0fL7ttP_IwAu_gjf-6hLpbWV7KU" />
         <script

@@ -1,0 +1,190 @@
+/* Sky behind the home page (ported from mock-ticket2/sky.css). Contract:
+   <div class="sky" aria-hidden="true"></div>, mounted once by <SkyBackground/>.
+   This file alone paints a static sky with clouds and both silhouettes;
+   sky.js (initSky) adds drifting cloud layers, the plane and parallax. */
+
+:root {
+  --sky-top: #0E5C98;
+  --sky-high: #1A7FBE;
+  --sky-mid: #2FA3CF;
+  --sky-low: #8FCDE2;
+  --sky-horizon: #E3F0F0;
+  --sky-haze: 255, 214, 172;
+  --sky-baiterek-h: clamp(250px, 50vh, 600px);
+  --sky-skytree-h: clamp(290px, 60vh, 720px);
+  --sky-astana-w: min(48vw, 680px);
+  --sky-tokyo-w: min(52vw, 760px);
+  --sky-side: 4vw;
+}
+
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+  background-color: var(--sky-high);
+  background-image:
+    /* static clouds, removed once sky.js paints its own */
+    radial-gradient(18% 4.5% at 22% 17%, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(9% 3% at 30% 15.5%, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(24% 5.5% at 74% 27%, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(11% 3.6% at 80% 25%, rgba(255, 255, 255, 0.36), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(30% 7% at 40% 52%, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 70%),
+    radial-gradient(14% 2.4% at 58% 9%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 70%),
+    /* warm haze low on the right, toward Tokyo */
+    radial-gradient(60% 46% at 92% 100%, rgba(var(--sky-haze), 0.42), rgba(var(--sky-haze), 0) 72%),
+    /* horizon glow */
+    radial-gradient(120% 30% at 50% 100%, rgba(244, 249, 247, 0.55), rgba(244, 249, 247, 0) 70%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-high) 26%, var(--sky-mid) 52%, var(--sky-low) 78%, var(--sky-horizon) 100%);
+}
+
+.sky.is-live {
+  background-image:
+    radial-gradient(60% 46% at 92% 100%, rgba(var(--sky-haze), 0.42), rgba(var(--sky-haze), 0) 72%),
+    radial-gradient(120% 30% at 50% 100%, rgba(244, 249, 247, 0.55), rgba(244, 249, 247, 0) 70%),
+    linear-gradient(180deg, var(--sky-top) 0%, var(--sky-high) 26%, var(--sky-mid) 52%, var(--sky-low) 78%, var(--sky-horizon) 100%);
+}
+
+/* No-JS silhouettes: Baiterek and Astana on the left, Skytree and Tokyo on the right. */
+.sky::before,
+.sky::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-repeat: no-repeat;
+}
+
+/* @fallback-start (generated from sky.js SKY_SVG, do not edit by hand) */
+.sky::before { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%2030%20160%20392%22%20preserveAspectRatio%3D%22xMidYMax%20meet%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22skyB-fill%22%20gradientUnits%3D%22userSpaceOnUse%22%20x1%3D%220%22%20y1%3D%2240%22%20x2%3D%220%22%20y2%3D%22420%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23F6FBFD%22%2F%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%23EAF4F8%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23D2E6EF%22%20stop-opacity%3D%22.25%22%2F%3E%3C%2FlinearGradient%3E%3CradialGradient%20id%3D%22skyB-gold%22%20cx%3D%22.42%22%20cy%3D%22.34%22%20r%3D%22.7%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23FFFDF6%22%2F%3E%3Cstop%20offset%3D%22.6%22%20stop-color%3D%22%23FCEFD2%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23F3D49A%22%2F%3E%3C%2FradialGradient%3E%3Cmask%20id%3D%22skyB-cols%22%20maskUnits%3D%22userSpaceOnUse%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22160%22%20height%3D%22430%22%3E%3Crect%20width%3D%22160%22%20height%3D%22430%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M74.6%20404L75.6%20190M80%20404V190M85.4%20404L84.4%20190%22%20stroke%3D%22%23000%22%20stroke-width%3D%221.1%22%20stroke-opacity%3D%22.7%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2280%22%20cy%3D%2280%22%20r%3D%2241%22%20fill%3D%22url(%23skyB-gold)%22%20opacity%3D%22.46%22%2F%3E%3Cg%20opacity%3D%22.3%22%3E%3Cg%20fill%3D%22url(%23skyB-fill)%22%3E%3Cpath%20d%3D%22M38%20422V410Q80%20400%20122%20410V422Z%22%2F%3E%3Cpath%20mask%3D%22url(%23skyB-cols)%22%20d%3D%22M63%20411C67%20402%2067.6%20390%2067.6%20372L68.6%20238C69%20214%2070.5%20196%2072%20182L88%20182C89.5%20196%2091%20214%2091.4%20238L92.4%20372C92.4%20390%2093%20402%2097%20411Z%22%2F%3E%3C%2Fg%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22url(%23skyB-fill)%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M73%20182C38.9%20148%2019.86%2090.92%2018%2044%22%20stroke-width%3D%222.8%22%2F%3E%3Cpath%20d%3D%22M74%20182C42.1%20148%2023.74%2096.2%2022%2052%22%20stroke-width%3D%222.2%22%2F%3E%3Cpath%20d%3D%22M75%20182C46.95%20148%2030.53%20102.8%2029%2062%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M76.2%20182C53.65%20148%2040.23%20109.4%2039%2072%22%20stroke-width%3D%221.8%22%2F%3E%3Cpath%20d%3D%22M77.4%20182C62%20148%2052.84%20116%2052%2082%22%20stroke-width%3D%221.6%22%2F%3E%3Cpath%20d%3D%22M78.6%20182C70.9%20148%2066.42%20121.28%2066%2090%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M79.6%20182C77.95%20148%2077.09%20123.92%2077%2094%22%20stroke-width%3D%221.4%22%2F%3E%3Cpath%20d%3D%22M85.5%20182C82%20148%2035%20104%2030%2064%22%20stroke-width%3D%221.3%22%2F%3E%3Cpath%20d%3D%22M85.5%20182C82%20148%2047.6%20119%2044%2079%22%20stroke-width%3D%221.3%22%2F%3E%3Cpath%20d%3D%22M87%20182C121.1%20148%20140.14%2090.92%20142%2044%22%20stroke-width%3D%222.8%22%2F%3E%3Cpath%20d%3D%22M86%20182C117.9%20148%20136.26%2096.2%20138%2052%22%20stroke-width%3D%222.2%22%2F%3E%3Cpath%20d%3D%22M85%20182C113.05%20148%20129.47%20102.8%20131%2062%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M83.8%20182C106.35%20148%20119.77%20109.4%20121%2072%22%20stroke-width%3D%221.8%22%2F%3E%3Cpath%20d%3D%22M82.6%20182C98%20148%20107.16%20116%20108%2082%22%20stroke-width%3D%221.6%22%2F%3E%3Cpath%20d%3D%22M81.4%20182C89.1%20148%2093.58%20121.28%2094%2090%22%20stroke-width%3D%221.5%22%2F%3E%3Cpath%20d%3D%22M80.4%20182C82.05%20148%2082.91%20123.92%2083%2094%22%20stroke-width%3D%221.4%22%2F%3E%3Cpath%20d%3D%22M74.5%20182C78%20148%20125%20104%20130%2064%22%20stroke-width%3D%221.3%22%2F%3E%3Cpath%20d%3D%22M74.5%20182C78%20148%20112.4%20119%20116%2079%22%20stroke-width%3D%221.3%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E"), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20700%2090%22%20preserveAspectRatio%3D%22xMinYMax%20meet%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22skyA-fade%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%220%22%3E%3Cstop%20offset%3D%22.45%22%20stop-color%3D%22%23fff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23fff%22%20stop-opacity%3D%220%22%2F%3E%3C%2FlinearGradient%3E%3Cmask%20id%3D%22skyA-mask%22%20maskUnits%3D%22userSpaceOnUse%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22700%22%20height%3D%2290%22%3E%3Crect%20width%3D%22700%22%20height%3D%2290%22%20fill%3D%22url(%23skyA-fade)%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cpath%20opacity%3D%22.12%22%20fill%3D%22%236A98B8%22%20mask%3D%22url(%23skyA-mask)%22%20d%3D%22M0%2090V78.76H10.3V90ZM13.1%2090V71.89H36.66V90ZM37.62%2090V65.4H62V90ZM62.63%2090V69.63H92.49V90ZM93.97%2090V69.31H111.59V90ZM115.5%2090V62.44H131.94V90ZM132.51%2090V74.18H146.53V90ZM149.58%2090V61.74H161.52V90ZM164.01%2090V60.68H191.69V90ZM195.37%2090V79.2H226.89V90ZM228.32%2090V39.71H249.38V90ZM250.85%2090V70.63H271.95V90ZM274.76%2090V73.39H302.66V90ZM303.21%2090V61.74H316.68V90ZM317.44%2090V41.05H343.88V90ZM347.56%2090V63.47H371.81V90ZM375.49%2090V69.4H388.53V90ZM392.09%2090V63.24H427.07V90ZM430.92%2090V81.94H466.08V90ZM468.14%2090V74.45H486.67V90ZM490.58%2090V75.58H515.07V90ZM518.03%2090V81.91H542.37V90ZM542.47%2090V81.86H577V90ZM579.47%2090V65.66H604.94V90ZM606.05%2090V67H641.7V90ZM644.19%2090V77.22H675.78V90ZM677.8%2090V76.78H702.54V90ZM420%2090C446%2082%20472%2058%20490%2022L486%204L494%2020C502%2044%20516%2072%20536%2090Z%22%2F%3E%3C%2Fsvg%3E"); }
+.sky::after { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20640%22%20preserveAspectRatio%3D%22xMidYMax%20meet%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22skyT-fill%22%20gradientUnits%3D%22userSpaceOnUse%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%22640%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23F6FBFD%22%2F%3E%3Cstop%20offset%3D%22.5%22%20stop-color%3D%22%23EAF4F8%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%23D2E6EF%22%20stop-opacity%3D%22.25%22%2F%3E%3C%2FlinearGradient%3E%3Cpattern%20id%3D%22skyT-lat%22%20patternUnits%3D%22userSpaceOnUse%22%20width%3D%229%22%20height%3D%2213%22%3E%3Cpath%20d%3D%22M0%200L9%2013M9%200L0%2013M0%200H9%22%20stroke%3D%22%23000%22%20stroke-width%3D%22.7%22%20fill%3D%22none%22%2F%3E%3C%2Fpattern%3E%3Cmask%20id%3D%22skyT-mask%22%20maskUnits%3D%22userSpaceOnUse%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22100%22%20height%3D%22640%22%3E%3Crect%20width%3D%22100%22%20height%3D%22640%22%20fill%3D%22%23fff%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%22310%22%20width%3D%22100%22%20height%3D%22280%22%20fill%3D%22url(%23skyT-lat)%22%20opacity%3D%22.55%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%22202%22%20width%3D%22100%22%20height%3D%2273%22%20fill%3D%22url(%23skyT-lat)%22%20opacity%3D%22.45%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%22291%22%20width%3D%22100%22%20height%3D%225%22%20fill%3D%22%23000%22%20opacity%3D%22.35%22%2F%3E%3Crect%20x%3D%220%22%20y%3D%22191%22%20width%3D%22100%22%20height%3D%223%22%20fill%3D%22%23000%22%20opacity%3D%22.3%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cpath%20opacity%3D%22.3%22%20fill%3D%22url(%23skyT-fill)%22%20fill-rule%3D%22evenodd%22%20mask%3D%22url(%23skyT-mask)%22%20d%3D%22M85%20640C80.5%20618%2078%20578%2076%20530C73.4%20450%2070%20360%2068.2%20306L73.2%20300L73.2%20288L72.4%20285.5L72.4%20281.5L66.9%20277L63.8%20200L65.9%20197L65.9%20188L63.4%20185L60.2%20146L56.2%20142L55.2%2078L54.4%2077L53.8%2040L52.7%2039L52.2%2022L51.1%2021L50.45%206L49.55%206L48.9%2021L47.8%2022L47.3%2039L46.2%2040L45.6%2077L44.8%2078L43.8%20142L39.8%20146L36.6%20185L34.1%20188L34.1%20197L36.2%20200L33.1%20277L27.6%20281.5L27.6%20285.5L26.8%20288L26.8%20300L31.8%20306C30%20360%2026.6%20450%2024%20530C22%20578%2019.5%20618%2015%20640ZM22.5%20640C25%20618%2033%20604%2041%20602C43.5%20610%2045%20624%2045.8%20640ZM77.5%20640C75%20618%2067%20604%2059%20602C56.5%20610%2055%20624%2054.2%20640Z%22%2F%3E%3C%2Fsvg%3E"), url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20800%2090%22%20preserveAspectRatio%3D%22xMaxYMax%20meet%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22skyK-fade%22%20x1%3D%220%22%20x2%3D%221%22%20y1%3D%220%22%20y2%3D%220%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%23fff%22%20stop-opacity%3D%220%22%2F%3E%3Cstop%20offset%3D%22.55%22%20stop-color%3D%22%23fff%22%2F%3E%3C%2FlinearGradient%3E%3Cmask%20id%3D%22skyK-mask%22%20maskUnits%3D%22userSpaceOnUse%22%20x%3D%220%22%20y%3D%220%22%20width%3D%22800%22%20height%3D%2290%22%3E%3Crect%20width%3D%22800%22%20height%3D%2290%22%20fill%3D%22url(%23skyK-fade)%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cpath%20opacity%3D%22.12%22%20fill%3D%22%236A98B8%22%20mask%3D%22url(%23skyK-mask)%22%20d%3D%22M0%2090V79.6H9.79V90ZM10.19%2090V76.37H23.16V90ZM23.67%2090V81.4H34.13V90ZM34.13%2090V69.47H51.15V90ZM51.93%2090V81.03H70.45V90ZM71.8%2090V77.07H91.38V90ZM91.54%2090V43.7H102.66V90ZM96.5%2043.7V34.92h1.2V43.7ZM102.91%2090V70.23H114.55V90ZM115.96%2090V70.11H135.34V90ZM136.67%2090V54.21H152.23V90ZM153.48%2090V81.27H164.72V90ZM165.41%2090V78.63H175.11V90ZM175.47%2090V68.7H185.99V90ZM186.17%2090V70.36H205.43V90ZM206.16%2090V62.92H215.82V90ZM217.26%2090V62.87H228.69V90ZM229.95%2090V73.38H251.44V90ZM252.15%2090V76.01H274.23V90ZM274.54%2090V61.07H287.12V90ZM287.93%2090V45.55H300.89V90ZM301.61%2090V76.56H317.92V90ZM319.51%2090V77.63H336.69V90ZM337.35%2090V64.9H351.34V90ZM352.28%2090V69.9H374.61V90ZM375.99%2090V78.79H386.52V90ZM387.61%2090V59.64H399.24V90ZM400.66%2090V75.58H414.38V90ZM415.43%2090V67.36H424.48V90ZM425%2090V76.92H443.5V90ZM443.97%2090V39.85H467.28V90ZM455.03%2039.85V29.23h1.2V39.85ZM468.23%2090V57.25H480.94V90ZM480.96%2090V74.68H497.75V90ZM499.13%2090V73.08H510.24V90ZM511.29%2090V26.74H528.39V90ZM529.41%2090V77.68H545.72V90ZM545.9%2090V62.61H554.24V90ZM555.21%2090V52.13H565.51V90ZM566.39%2090V54.04H581.84V90ZM583.09%2090V68.11H594.43V90ZM595.1%2090V69.74H618.87V90ZM620.42%2090V71.49H627.86V90ZM628.43%2090V72.84H637.43V90ZM638.98%2090V71.86H659.43V90ZM660.82%2090V52.81H680.45V90ZM680.83%2090V63.62H695.12V90ZM696.26%2090V51.47H717.52V90ZM717.55%2090V78.6H729.86V90ZM730.54%2090V74.03H750.8V90ZM751.37%2090V45.74H771.41V90ZM760.79%2045.74V38.1h1.2V45.74ZM772.43%2090V45.47H794.58V90ZM782.91%2045.47V39.07h1.2V45.47ZM796.09%2090V67.76H804.96V90Z%22%2F%3E%3C%2Fsvg%3E"); }
+/* @fallback-end */
+
+.sky::before {
+  background-position: left var(--sky-side) bottom 0, left 0 bottom 0;
+  background-size: auto var(--sky-baiterek-h), var(--sky-astana-w) auto;
+}
+
+.sky::after {
+  background-position: right var(--sky-side) bottom 0, right 0 bottom 0;
+  background-size: auto var(--sky-skytree-h), var(--sky-tokyo-w) auto;
+}
+
+.sky.is-live::before,
+.sky.is-live::after {
+  display: none;
+}
+
+/* Live layers (added by sky.js) */
+.sky__layer {
+  position: absolute;
+  inset: -16px;
+  will-change: transform;
+}
+
+.sky__clouds canvas {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: block;
+  will-change: transform;
+}
+
+.sky__clouds--far { opacity: 0.8; }
+.sky__clouds--mid { opacity: 0.9; }
+.sky__clouds--near { opacity: 0.6; }
+
+.sky__tower,
+.sky__skyline {
+  position: absolute;
+  bottom: 0;
+  line-height: 0;
+}
+
+.sky__tower svg,
+.sky__skyline svg {
+  display: block;
+  height: 100%;
+  width: auto;
+}
+
+.sky__tower--baiterek {
+  left: calc(var(--sky-side) + 16px);
+  height: calc(var(--sky-baiterek-h) + 16px);
+}
+
+.sky__tower--skytree {
+  right: calc(var(--sky-side) + 16px);
+  height: calc(var(--sky-skytree-h) + 16px);
+}
+
+.sky__skyline { bottom: 16px; }
+.sky__skyline svg { width: 100%; height: auto; }
+.sky__skyline--astana { left: 16px; width: var(--sky-astana-w); }
+.sky__skyline--tokyo { right: 16px; width: var(--sky-tokyo-w); }
+
+/* Far jet and its contrail, rising gently from Astana toward Tokyo. */
+.sky__route {
+  position: absolute;
+  top: 27%;
+  left: -6%;
+  width: 112%;
+  height: 12px;
+  transform: rotate(-4.5deg);
+  transform-origin: 0 50%;
+}
+
+.sky__track {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(-100%, 0, 0);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.sky__trail {
+  position: absolute;
+  top: 5px;
+  right: 16px;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.1) 45%, rgba(255, 255, 255, 0.55) 97%, rgba(255, 255, 255, 0) 100%);
+}
+
+.sky__plane {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  width: 15px;
+  height: 8px;
+  opacity: 0.85;
+}
+
+.sky__plane svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --sky-baiterek-h: clamp(190px, 31vh, 300px);
+    --sky-skytree-h: clamp(220px, 38vh, 360px);
+    --sky-astana-w: 62vw;
+    --sky-tokyo-w: 64vw;
+    --sky-side: 2vw;
+  }
+
+  .sky__route { top: 14%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky__flight { display: none; }
+}
+
+/* Baiterek is drawn in full colour; mute it here so it stays in the haze. */
+.sky__tower--baiterek svg {
+  opacity: .9;
+}
