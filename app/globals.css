@@ -282,13 +282,52 @@
 }
 .hero-flight__title {
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   font-family: var(--font-tiktok), ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(18px, 1.6vw, 22px);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: #0c2633;
   text-align: center;
-  text-wrap: balance;
+}
+/* The name in the boarding pass display cut: wide, heavy, paper white over the day sky. */
+.hero-flight__name {
+  display: block;
+  font-size: clamp(34px, 4.7vw, 68px);
+  font-weight: 850;
+  font-stretch: 125%;
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  color: #f6f4ee;
+  text-shadow:
+    0 1px 1px rgb(6 30 42 / 0.35),
+    0 6px 28px rgb(6 30 42 / 0.35);
+}
+.hero-flight__comma {
+  color: #fec50c;
+}
+/* The role as a printed tag in the ticket language: ink on paper, always legible on the sky. */
+.hero-flight__role {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px 7px 13px;
+  border-radius: 999px;
+  background: #f6f4ee;
+  color: #0c2633;
+  font-size: clamp(13px, 1.15vw, 16px);
+  font-weight: 700;
+  font-stretch: 110%;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 0 10px 24px -10px rgb(6 30 42 / 0.55);
+}
+.hero-flight__dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: #fec50c;
+  box-shadow: 0 0 0 2px rgb(12 38 51 / 0.12);
 }
 .hero-flight__ticket {
   width: min(920px, calc(100vw - 32px));
@@ -300,7 +339,12 @@
     gap: 14px;
   }
   .hero-flight__title {
-    font-size: 17px;
+    gap: 10px;
+  }
+  .hero-flight__role {
+    padding: 6px 12px 6px 10px;
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -78,7 +78,10 @@ export default function PrivacyPage() {
       <section id="data-request" className="scroll-mt-24">
         <h2>Data request</h2>
         <p className="mb-5">Use this form to ask for access, correction or deletion of your data.</p>
-        <DataRequestForm />
+        {/* The form is styled for a dark surface: it sits on an ink stub inside the paper sheet. */}
+        <div className="rounded-2xl bg-[#0C2633] p-5 text-[#F6F4EE] sm:p-6">
+          <DataRequestForm />
+        </div>
       </section>
 
       <section>

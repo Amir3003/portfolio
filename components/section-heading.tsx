@@ -25,6 +25,40 @@ export const giantWord: CSSProperties = {
 /** Body and label type of the ticket world. */
 export const ticketText: CSSProperties = { fontFamily: DISPLAY_FAMILY }
 
+/** Small spaced capitals, the field labels of the boarding pass. */
+export const fieldLabel = 'text-[11px] font-semibold uppercase tracking-[0.18em]'
+
+/**
+ * Decorative barcode (aria-hidden). Bar widths come from the characters of `code`,
+ * so the same code always draws the same bars, like the stub on the boarding pass.
+ */
+export function Barcode({ code, color = TICKET.ink, className }: { code: string; color?: string; className?: string }) {
+  const bars: Array<{ x: number; w: number }> = []
+  let x = 0
+  for (let i = 0; i < code.length; i++) {
+    const c = code.charCodeAt(i)
+    for (let k = 0; k < 3; k++) {
+      const w = 1 + ((c >> k) & 1) + ((c * (k + 3)) % 3 === 0 ? 1 : 0)
+      bars.push({ x, w })
+      x += w + 1 + ((c >> (k + 2)) & 1)
+    }
+  }
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox={`0 0 ${x} 40`}
+      preserveAspectRatio="none"
+      className={className}
+      fill={color}
+    >
+      {bars.map((b) => (
+        <rect key={b.x} x={b.x} y={0} width={b.w} height={40} />
+      ))}
+    </svg>
+  )
+}
+
 export function SectionHeading({
   id,
   eyebrow,

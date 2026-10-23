@@ -7,8 +7,8 @@ import './ticket.css'
 
 /**
  * The boarding pass hero: Astana NQZ to Tokyo NRT, 28 AUG 2029, seat 17A.
- * Ported from the approved mockup (mock-ticket2/ticket.js). The markup renders on the server;
- * one effect adds the live clocks, the countdown, the pointer tilt and the scroll tear, all
+ * Ported from the approved mockup (design/mock-ticket/ticket.js). The markup renders on the server;
+ * one effect adds the live clocks, the countdown, the mouse tilt and the scroll tear, all
  * written straight to the DOM so React never re-renders while the ticket moves.
  */
 
@@ -130,8 +130,6 @@ interface TiltState {
 const REST: TiltState = { rx: 0, ry: 0, vx: 0, vy: 0, tx: 0, ty: 0, mx: 50, my: 50, tmx: 50, tmy: 50 }
 const MAX_TILT = 10
 
-type OrientationPermission = { requestPermission?: () => Promise<string> }
-
 function attachTicket(root: HTMLElement): () => void {
   const tk = root.querySelector<HTMLElement>('.tk')
   const countEl = root.querySelector<HTMLElement>('[data-countdown]')
@@ -164,9 +162,6 @@ function attachTicket(root: HTMLElement): () => void {
   const st: TiltState = { ...REST }
   let raf = 0
   let hovering = false
-  let sway = false
-  let orient = false
-  const swayT0 = performance.now()
   const write = () => {
     const s = tk.style
     s.setProperty('--rx', st.rx.toFixed(3) + 'deg')
@@ -177,15 +172,8 @@ function attachTicket(root: HTMLElement): () => void {
     s.setProperty('--sy', (26 + st.rx * 1.6).toFixed(2) + 'px')
     s.setProperty('--tilt', (Math.hypot(st.rx, st.ry) / MAX_TILT).toFixed(3))
   }
-  const frame = (t: number) => {
+  const frame = () => {
     raf = 0
-    if (sway && !hovering && !orient) {
-      const k = (t - swayT0) / 1000
-      st.tx = Math.sin(k * 0.55) * 3.2
-      st.ty = Math.sin(k * 0.8 + 1) * 4.5
-      st.tmx = 50 + st.ty * 6
-      st.tmy = 50 - st.tx * 6
-    }
     const K = 0.07
     const D = 0.78
     st.vx = (st.vx + (st.tx - st.rx) * K) * D
@@ -198,7 +186,7 @@ function attachTicket(root: HTMLElement): () => void {
     const moving =
       Math.abs(st.vx) + Math.abs(st.vy) + Math.abs(st.tx - st.rx) + Math.abs(st.ty - st.ry) + Math.abs(st.tmx - st.mx) * 0.02 >
       0.002
-    if ((moving || sway) && !reduced) raf = requestAnimationFrame(frame)
+    if (moving && !reduced) raf = requestAnimationFrame(frame)
   }
   const kick = () => {
     if (!raf && !reduced) raf = requestAnimationFrame(frame)
@@ -213,6 +201,7 @@ function attachTicket(root: HTMLElement): () => void {
     kick()
   }
   const onMove = (e: PointerEvent) => {
+    // Tilt follows a mouse or pen only: touch screens keep the ticket flat and still.
     if (reduced || e.pointerType === 'touch') return
     const r = tk.getBoundingClientRect()
     const nx = (e.clientX - r.left) / r.width
@@ -233,34 +222,6 @@ function attachTicket(root: HTMLElement): () => void {
   }
   window.addEventListener('pointermove', onMove, { passive: true })
   document.documentElement.addEventListener('pointerleave', onLeave)
-
-  // Touch: device orientation when allowed, otherwise an idle sway.
-  const coarse = window.matchMedia('(hover: none)').matches
-  const onOrient = (e: DeviceOrientationEvent) => {
-    if (reduced || e.beta == null || e.gamma == null) return
-    orient = true
-    st.ty = Math.max(-MAX_TILT, Math.min(MAX_TILT, e.gamma / 2.5))
-    st.tx = Math.max(-MAX_TILT, Math.min(MAX_TILT, -(e.beta - 40) / 2.5))
-    st.tmx = 50 + st.ty * 4
-    st.tmy = 50 - st.tx * 4
-    kick()
-  }
-  const DOE = (typeof DeviceOrientationEvent === 'undefined' ? undefined : DeviceOrientationEvent) as
-    | OrientationPermission
-    | undefined
-  const askOrient = () => {
-    DOE?.requestPermission?.()
-      .then((r) => {
-        if (r === 'granted') window.addEventListener('deviceorientation', onOrient)
-      })
-      .catch(() => {})
-  }
-  if (coarse) {
-    sway = true
-    kick()
-    if (typeof DOE?.requestPermission === 'function') tk.addEventListener('click', askOrient, { once: true })
-    else window.addEventListener('deviceorientation', onOrient)
-  }
 
   // Tear: the stub falls and the main part lifts over the first viewport of scroll.
   let progress = 0
@@ -304,8 +265,6 @@ function attachTicket(root: HTMLElement): () => void {
     cancelAnimationFrame(raf)
     window.removeEventListener('pointermove', onMove)
     document.documentElement.removeEventListener('pointerleave', onLeave)
-    window.removeEventListener('deviceorientation', onOrient)
-    tk.removeEventListener('click', askOrient)
     window.removeEventListener('scroll', onScroll)
     unsubscribe()
     rmq.removeEventListener('change', onRm)

@@ -25,7 +25,13 @@ export default function Page() {
         <section id="top" data-hero="" aria-labelledby="hero-title" className="hero-flight">
           <div className="hero-flight__pin">
             <h1 id="hero-title" className="hero-flight__title">
-              Amir Nagiyev, AI &amp; ML developer from Astana
+              <span className="hero-flight__name">
+                Amir Nagiyev<span className="hero-flight__comma">,</span>
+              </span>{' '}
+              <span className="hero-flight__role">
+                <span className="hero-flight__dot" aria-hidden="true" />
+                AI &amp; ML developer from Astana
+              </span>
             </h1>
             <div className="hero-flight__ticket">
               <BoardingPass />

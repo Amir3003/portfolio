@@ -6,64 +6,91 @@ import { initSky, type SkyHandle } from '@/components/sky/sky-engine'
 import './sky.css'
 
 /**
- * Scroll positions (document px) where the sky reaches each time of day.
- * The flight: day over the hero, golden hour at the Voyage AI panel, night by QADAM and Contact.
+ * The scroll is the flight. Keyframes in document px -> time of day:
+ *   top of page / hero ............ 0    (day over Astana)
+ *   ticket gone, laptop story ..... 0 -> 0.5
+ *   Voyage AI panel ............... 0.5  (golden hour)
+ *   Projects section .............. ~0.78 (dusk) -> 1
+ *   Contact and footer ............ 1    (night over Tokyo), reached at the latest at the very bottom
  */
-interface Keys {
-  start: number
-  voyage: number
-  qadam: number
-}
+type Key = readonly [y: number, t: number]
 
 const docTop = (el: Element | null): number | null =>
   el ? el.getBoundingClientRect().top + window.scrollY : null
 
-function measure(): Keys | null {
+function measure(): Key[] {
+  const vh = window.innerHeight
+  const max = Math.max(1, document.documentElement.scrollHeight - vh)
+  const keys: Array<[number, number]> = []
   const hero = document.querySelector('[data-hero]')
+  const heroEnd = hero ? hero.getBoundingClientRect().bottom + window.scrollY - vh * 0.5 : 0
+  keys.push([Math.max(0, heroEnd), 0])
   const voyage = docTop(document.getElementById('voyage'))
-  const qadam = docTop(document.getElementById('qadam'))
-  if (!hero || voyage == null || qadam == null) return null
-  const r = hero.getBoundingClientRect()
-  // Day until the torn ticket has left the screen.
-  const start = r.bottom + window.scrollY - window.innerHeight * 0.5
-  return { start, voyage, qadam: Math.max(qadam, voyage + 1) }
+  if (voyage != null) keys.push([voyage, 0.5])
+  const projects = docTop(document.getElementById('projects'))
+  if (projects != null) keys.push([projects - vh * 0.6, 0.78])
+  const contact = docTop(document.getElementById('contact'))
+  keys.push([contact != null ? Math.min(max, contact - vh * 0.4) : max, 1])
+  // Monotonic in both y and t, and never past the bottom so t is exactly 1 there.
+  const out: Array<[number, number]> = []
+  for (const [y, t] of keys) {
+    const prev = out[out.length - 1]
+    const yy = Math.min(max, prev ? Math.max(y, prev[0] + 1) : y)
+    if (prev && (yy <= prev[0] || t < prev[1])) continue
+    out.push([yy, t])
+  }
+  const last = out[out.length - 1]
+  if (!last || last[1] < 1) out.push([max, 1])
+  return out
 }
 
-const smooth = (x: number): number => x * x * (3 - 2 * x)
-
-function timeAt(y: number, k: Keys): number {
-  if (y <= k.start) return 0
-  if (y <= k.voyage) return 0.5 * smooth((y - k.start) / Math.max(1, k.voyage - k.start))
-  if (y <= k.qadam) return 0.5 + 0.5 * smooth((y - k.voyage) / Math.max(1, k.qadam - k.voyage))
+function timeAt(y: number, keys: Key[]): number {
+  if (y <= keys[0][0]) return keys[0][1]
+  for (let i = 1; i < keys.length; i++) {
+    const [y1, t1] = keys[i]
+    if (y <= y1) {
+      const [y0, t0] = keys[i - 1]
+      return t0 + (t1 - t0) * ((y - y0) / Math.max(1, y1 - y0))
+    }
+  }
   return 1
 }
 
 /**
- * The animated sky, fixed behind the whole home page (z-index 0, content sits above it).
- * The sky engine is a plain DOM module; this wrapper only mounts it once and feeds it the
- * time of day from the scroll stream, written from requestAnimationFrame (no React renders).
+ * The animated sky, fixed behind the page (z-index 0, content sits above it).
+ * The sky engine is a plain DOM module; this wrapper mounts it once and feeds it the time of day
+ * from the scroll stream (Lenis or native), written from requestAnimationFrame: no React renders.
+ * Inner pages pass `fixedTime` for one calm time of day with no scroll binding.
  */
-export function SkyBackground() {
+export function SkyBackground({ fixedTime }: { fixedTime?: number } = {}) {
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const el = ref.current
     if (!el) return
     const sky: SkyHandle = initSky(el)
-    let keys: Keys | null = null
+    if (fixedTime !== undefined) {
+      sky.setTime?.(fixedTime)
+      return () => sky.destroy()
+    }
+    let keys: Key[] | null = null
     let raf = 0
+    let last = -1
 
     const update = () => {
       raf = 0
       if (!keys) keys = measure()
-      if (!keys || !sky.setTime) return
-      sky.setTime(timeAt(window.scrollY, keys))
+      const t = Math.min(1, Math.max(0, timeAt(window.scrollY, keys)))
+      if (Math.abs(t - last) < 1e-4) return
+      last = t
+      sky.setTime?.(t)
     }
     const schedule = () => {
       if (!raf) raf = requestAnimationFrame(update)
     }
     const remeasure = () => {
       keys = null
+      last = -1
       schedule()
     }
 
@@ -82,7 +109,7 @@ export function SkyBackground() {
       cancelAnimationFrame(raf)
       sky.destroy()
     }
-  }, [])
+  }, [fixedTime])
 
   return <div ref={ref} className="sky" aria-hidden="true" />
 }

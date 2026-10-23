@@ -408,10 +408,6 @@ export function StoryLaptop() {
     [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0],
   )
 
-  // Stage 5: contact label appears as the lid closes.
-  const contactOpacity = useTransform(progress, [POSE_KEYS.closed - 0.01, 0.995], [0, 1])
-  const contactEvents = useTransform(contactOpacity, eventsFor)
-
   // Static fallback for reduced motion or missing WebGL.
   if (useFallback) {
     return (
@@ -522,15 +518,6 @@ export function StoryLaptop() {
             <SpecSheet />
           </motion.div>
 
-          {/* Stage 5: outro, hands off to the contact section */}
-          <motion.a
-            href="#contact"
-            style={{ opacity: contactOpacity, pointerEvents: contactEvents }}
-            className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 font-display text-xs font-semibold uppercase tracking-[0.16em] text-[#F6F4EE] hover:text-[#FEC50C] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FEC50C]"
-          >
-            <span>contact</span>
-            <span className="h-5 w-px bg-[#F6F4EE]/50" aria-hidden="true" />
-          </motion.a>
         </div>
 
         {/* Layer 30: native project panels (Voyage AI, then QADAM). Normal DOM subtrees (no portal, no CSS 3D),

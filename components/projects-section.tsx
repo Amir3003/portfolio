@@ -5,15 +5,18 @@ import { SectionHeading, TICKET, giantWord, ticketText } from '@/components/sect
 import { PROJECTS } from '@/lib/seo'
 
 /** Itinerary order follows the 3D story: Voyage AI first, then QADAM. */
-const ITINERARY: ReadonlyArray<{ slug: string; word: string; line: string }> = [
+const ITINERARY: ReadonlyArray<{ slug: string; word: string; size: string; line: string }> = [
   {
     slug: 'voyage-ai',
     word: 'Voyage AI',
+    // Two lines on phones (VOYAGE / AI), one line from tablet up; always inside the viewport.
+    size: 'text-[clamp(2.75rem,15.5vw,8.5rem)] md:text-[min(12.2vw,12.5rem)]',
     line: 'One sentence in, three priced trips out. Fifty resorts in ten countries.',
   },
   {
     slug: 'qadam',
     word: 'QADAM',
+    size: 'text-[clamp(2.75rem,15.5vw,8.5rem)] md:text-[min(14vw,14rem)]',
     line: 'Qadam means step. A radar for the grants, hackathons and internships a student can actually get.',
   },
 ]
@@ -42,11 +45,11 @@ export function ProjectsSection() {
       </div>
 
       <ol className="flex flex-col gap-24 sm:gap-32">
-        {stops.map(({ project: p, word, line }, i) => {
+        {stops.map(({ project: p, word, size, line }, i) => {
           const flip = i % 2 === 1
           return (
             <li key={p.slug} className="mx-auto w-full max-w-[1600px]">
-              <article aria-labelledby={`stop-${p.slug}`} className="flex flex-col">
+              <article aria-labelledby={`stop-${p.slug}`} className="flex scroll-mt-28 flex-col">
                 <p
                   className={`mx-auto flex w-full max-w-6xl items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] ${flip ? 'flex-row-reverse text-right' : ''}`}
                   style={{ color: TICKET.sky }}
@@ -60,7 +63,7 @@ export function ProjectsSection() {
 
                 <h3
                   id={`stop-${p.slug}`}
-                  className={`mt-5 text-[clamp(3rem,13.5vw,15rem)] uppercase ${flip ? 'text-right' : ''}`}
+                  className={`mt-5 max-w-full break-words uppercase ${size} ${flip ? 'text-right' : ''}`}
                   style={{ ...giantWord, color: TICKET.paper }}
                 >
                   {word}

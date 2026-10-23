@@ -1,0 +1,48 @@
+/*
+ * Boarding pass details shared by the sections around the 3D story
+ * (projects, contact, footer, case and legal pages).
+ */
+
+/* Ticket parts with punched half circles where they meet, so the sky shows through the notches.
+   The shadow lives on the parent as a drop-shadow filter, because a mask would clip a box-shadow. */
+.tk-part-top,
+.tk-part-bottom {
+  --notch: 11px;
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+.tk-part-top {
+  -webkit-mask-image:
+    radial-gradient(circle var(--notch) at 0 100%, transparent 98%, #000 100%),
+    radial-gradient(circle var(--notch) at 100% 100%, transparent 98%, #000 100%);
+  mask-image:
+    radial-gradient(circle var(--notch) at 0 100%, transparent 98%, #000 100%),
+    radial-gradient(circle var(--notch) at 100% 100%, transparent 98%, #000 100%);
+}
+.tk-part-bottom {
+  -webkit-mask-image:
+    radial-gradient(circle var(--notch) at 0 0, transparent 98%, #000 100%),
+    radial-gradient(circle var(--notch) at 100% 0, transparent 98%, #000 100%);
+  mask-image:
+    radial-gradient(circle var(--notch) at 0 0, transparent 98%, #000 100%),
+    radial-gradient(circle var(--notch) at 100% 0, transparent 98%, #000 100%);
+}
+
+.tk-lift {
+  filter: drop-shadow(0 26px 34px rgba(2, 10, 20, 0.45));
+}
+
+/* Perforation: a row of small round holes, like the tear line on the stub. */
+.tk-perf {
+  height: 6px;
+  background: radial-gradient(circle 2.5px at 3px 3px, currentColor 96%, transparent 100%) 0 0 / 12px 6px repeat-x;
+}
+
+/* Long text on inner pages: a calm paper sheet over the still sky. */
+.tk-sheet {
+  background: #f6f4ee;
+  color: #0c2633;
+  border-radius: 24px;
+  box-shadow: 0 40px 80px -40px rgba(2, 10, 20, 0.7);
+}
+

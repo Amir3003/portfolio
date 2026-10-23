@@ -5,7 +5,9 @@ import type { ReactNode } from 'react'
 import { TICKET, giantWord, ticketText } from '@/components/section-heading'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
+import { SkyBackground } from '@/components/sky/sky-background'
 import { PROJECTS, projectJsonLd, type ProjectSeo } from '@/lib/seo'
+import './sections.css'
 
 export interface CaseSection {
   heading: string
@@ -27,27 +29,28 @@ const label = 'text-[11px] font-semibold uppercase tracking-[0.18em]'
 /**
  * Case study page for one project: task, solution, stack and status, with a screenshot.
  * Server rendered, so the whole text is in the HTML that search engines fetch.
- * Same boarding pass world as the home page, but calm: a paper ticket over a still day sky,
- * then the body on solid paper.
+ * Same boarding pass world as the home page, but calm: the sky stands still at dusk,
+ * a paper ticket carries the facts and the long text sits on a solid paper sheet.
  */
 export function ProjectCase({ project, lead, role, status, stack, sections, links }: ProjectCaseProps) {
   const others = PROJECTS.filter((p) => p.slug !== project.slug)
 
   return (
-    <div style={{ ...ticketText, background: TICKET.paper, color: TICKET.ink }}>
+    <div style={{ ...ticketText, color: TICKET.ink }}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(projectJsonLd(project)) }}
       />
+      {/* The same sky as the home page, held still at dusk. */}
+      <SkyBackground fixedTime={0.62} />
       <SiteHeader base="/" />
-      <main id="main">
-        {/* Still day sky behind the ticket. */}
-        <div
-          className="px-4 pt-24 pb-14 sm:px-8 sm:pt-28 sm:pb-20"
-          style={{ background: 'linear-gradient(180deg, #0F6FAE 0%, #2B97CF 45%, #8FCFE6 80%, #F6F4EE 100%)' }}
-        >
+      <main id="main" className="relative z-[1]">
+        <div className="px-4 pt-24 pb-10 sm:px-8 sm:pt-28 sm:pb-14">
           <div className="mx-auto max-w-5xl">
-            <nav aria-label="Breadcrumb" className="text-sm font-medium text-[#F6F4EE]">
+            <nav
+              aria-label="Breadcrumb"
+              className="inline-block max-w-full rounded-full bg-[#0C2633]/75 px-4 py-1.5 text-sm font-medium text-[#F6F4EE] backdrop-blur-sm"
+            >
               <ol className="flex flex-wrap items-center gap-2">
                 <li>
                   <Link href="/" className="-my-3 inline-block py-3 underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F6F4EE]">
@@ -66,7 +69,7 @@ export function ProjectCase({ project, lead, role, status, stack, sections, link
             </nav>
 
             {/* The ticket: main part and a stub with role and status. */}
-            <header className="mt-6 grid grid-cols-1 overflow-hidden rounded-[28px] bg-[#F6F4EE] shadow-[0_40px_80px_-40px_rgba(6,30,42,0.65)] lg:grid-cols-[minmax(0,1fr)_17rem]">
+            <header className="mt-5 grid grid-cols-1 overflow-hidden rounded-[28px] bg-[#F6F4EE] shadow-[0_40px_80px_-40px_rgba(2,10,20,0.75)] lg:grid-cols-[minmax(0,1fr)_17rem]">
               <div className="flex flex-col gap-5 p-6 sm:p-10">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <p className={label} style={{ color: TICKET.skyInk }}>
@@ -126,67 +129,72 @@ export function ProjectCase({ project, lead, role, status, stack, sections, link
           </div>
         </div>
 
-        <div className="mx-auto max-w-5xl px-4 pb-24 sm:px-8">
-          <figure className="overflow-hidden rounded-2xl bg-white p-1.5 shadow-[0_24px_60px_-36px_rgba(6,30,42,0.55)] ring-1 ring-[#0C2633]/10 sm:p-2">
-            <Image
-              src={project.image}
-              alt={project.imageAlt}
-              width={1600}
-              height={900}
-              priority
-              className="h-auto w-full rounded-xl"
-            />
-          </figure>
+        <div className="px-4 pb-24 sm:px-8">
+          <div className="tk-sheet mx-auto max-w-5xl p-3 pb-12 sm:p-4 sm:pb-16">
+            <figure className="overflow-hidden rounded-[18px] bg-white p-1.5 ring-1 ring-[#0C2633]/10 sm:p-2">
+              <Image
+                src={project.image}
+                alt={project.imageAlt}
+                width={1600}
+                height={900}
+                priority
+                className="h-auto w-full rounded-xl"
+              />
+            </figure>
 
-          <div className="mx-auto mt-16 flex max-w-[40rem] flex-col gap-12 text-pretty text-[17px] leading-[1.7] text-[#0C2633]/85 [&_li]:ml-5 [&_li]:list-disc [&_li]:marker:text-[#006A7A] [&_strong]:font-bold [&_strong]:text-[#0C2633] [&_ul]:mt-3 [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-2.5">
-            {sections.map((s) => (
-              <section key={s.heading}>
-                <h2
-                  className="mb-4 text-balance text-[1.75rem] text-[#0C2633]"
-                  style={{ ...giantWord, fontStretch: '115%', letterSpacing: '-0.02em', lineHeight: 1.1, fontWeight: 800 }}
-                >
-                  {s.heading}
-                </h2>
-                {s.body}
-              </section>
-            ))}
-          </div>
-
-          <aside className="mx-auto mt-20 max-w-[40rem] border-t-2 border-dashed border-[#0C2633]/20 pt-10">
-            <h2 className={label} style={{ color: TICKET.skyInk }}>
-              More projects · Next stop
-            </h2>
-            <ul className="mt-4 flex flex-col gap-3">
-              {others.map((p) => (
-                <li key={p.slug}>
-                  <Link
-                    href={p.path}
-                    className="group flex flex-col gap-1.5 rounded-2xl bg-[#0C2633] p-5 text-[#F6F4EE] transition-colors duration-150 hover:bg-[#123445] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0C2633] motion-reduce:transition-none sm:p-6"
+            <div className="mx-auto mt-12 flex max-w-[40rem] flex-col gap-12 px-2 sm:mt-16 sm:px-4 text-pretty text-[17px] leading-[1.7] text-[#0C2633]/85 [&_li]:ml-5 [&_li]:list-disc [&_li]:marker:text-[#006A7A] [&_strong]:font-bold [&_strong]:text-[#0C2633] [&_ul]:mt-3 [&_ul]:flex [&_ul]:flex-col [&_ul]:gap-2.5">
+              {sections.map((s) => (
+                <section key={s.heading}>
+                  <h2
+                    className="mb-4 text-balance text-[1.75rem] text-[#0C2633]"
+                    style={{ ...giantWord, fontStretch: '115%', letterSpacing: '-0.02em', lineHeight: 1.1, fontWeight: 800 }}
                   >
-                    <span className="flex items-center justify-between gap-3 text-lg font-bold">
-                      {p.name} case study
-                      <ArrowRight
-                        className="size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-0.5 motion-reduce:transition-none"
-                        aria-hidden="true"
-                      />
-                    </span>
-                    <span className="text-pretty text-sm leading-relaxed text-[#F6F4EE]/75">{p.description}</span>
+                    {s.heading}
+                  </h2>
+                  {s.body}
+                </section>
+              ))}
+            </div>
+
+            <aside className="mx-auto mt-16 max-w-[40rem] px-2 sm:mt-20 sm:px-4">
+              <div aria-hidden="true" className="tk-perf mb-10 text-[#0C2633]/25" />
+              <h2 className={label} style={{ color: TICKET.skyInk }}>
+                More projects · Next stop
+              </h2>
+              <ul className="mt-4 flex flex-col gap-3">
+                {others.map((p) => (
+                  <li key={p.slug}>
+                    <Link
+                      href={p.path}
+                      className="group flex flex-col gap-1.5 rounded-2xl bg-[#0C2633] p-5 text-[#F6F4EE] transition-colors duration-150 hover:bg-[#123445] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0C2633] motion-reduce:transition-none sm:p-6"
+                    >
+                      <span className="flex items-center justify-between gap-3 text-lg font-bold">
+                        {p.name} case study
+                        <ArrowRight
+                          className="size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-0.5 motion-reduce:transition-none"
+                          aria-hidden="true"
+                        />
+                      </span>
+                      <span className="text-pretty text-sm leading-relaxed text-[#F6F4EE]/75">{p.description}</span>
+                    </Link>
+                  </li>
+                ))}
+                <li>
+                  <Link
+                    href="/#contact"
+                    className="-my-1 inline-block py-3 text-sm font-semibold text-[#0C2633] underline underline-offset-4 hover:text-[#006A7A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0C2633]"
+                  >
+                    Contact Amir Nagiyev
                   </Link>
                 </li>
-              ))}
-              <li>
-                <Link
-                  href="/#contact"
-                  className="-my-1 inline-block py-3 text-sm font-semibold text-[#0C2633] underline underline-offset-4 hover:text-[#006A7A] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0C2633]"
-                >
-                  Contact Amir Nagiyev
-                </Link>
-              </li>
-            </ul>
-          </aside>
+              </ul>
+            </aside>
+          </div>
         </div>
       </main>
-      <SiteFooter solid />
+      <div className="relative z-[1]">
+        <SiteFooter />
+      </div>
     </div>
   )
 }
