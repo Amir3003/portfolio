@@ -49,7 +49,7 @@ export const voyageLinks = {
 } as const
 
 export const qadamLinks = {
-  site: 'https://nvidia-pathfinder.vercel.app/welcome',
+  site: 'https://www.qadamhub.com',
   instagram: 'https://instagram.com/joinqadamhub',
   tiktok: 'https://www.tiktok.com/@qadamhub',
 } as const
