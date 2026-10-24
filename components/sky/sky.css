@@ -283,3 +283,12 @@
 @media (prefers-reduced-motion: reduce) {
   .sky__flight { display: none; }
 }
+
+/* Tablets: cap the towers by width too, so tall portrait iPads do not get towers that climb
+   behind the copy. */
+@media (pointer: coarse) and (min-width: 768px) {
+  :root {
+    --sky-baiterek-h: clamp(250px, min(50vh, 46vw), 600px);
+    --sky-tokyo-h: clamp(260px, min(53vh, 49vw), 640px);
+  }
+}

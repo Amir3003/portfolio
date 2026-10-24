@@ -509,15 +509,19 @@ function paintLayer(canvas: HTMLCanvasElement, cfg: CloudCfg, W: number, H: numb
   const scale = Math.min(1.2, Math.max(0.55, W / 1440));
   const T = Math.round(Math.max(W, 1000 * scale + 400)); // repeat period
   const cssW = T + W;
-  canvas.width = Math.ceil(cssW * RES);
-  canvas.height = Math.ceil(H * RES);
+  // Safari before 18 has no canvas `filter`: paint at a lower resolution instead, so the
+  // upscale softens the puffs (and the bitmap is smaller on those older iPads).
+  const blur = 'filter' in CanvasRenderingContext2D.prototype;
+  const res = blur ? RES : RES * 0.6;
+  canvas.width = Math.ceil(cssW * res);
+  canvas.height = Math.ceil(H * res);
   canvas.style.width = cssW + 'px';
   canvas.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
   if (!ctx) return T;
-  ctx.setTransform(RES, 0, 0, RES, 0, 0);
+  ctx.setTransform(res, 0, 0, res, 0, 0);
   ctx.clearRect(0, 0, cssW, H);
-  if ('filter' in ctx) ctx.filter = `blur(${cfg.wisp ? 2 : 3}px)`;
+  if (blur) ctx.filter = `blur(${cfg.wisp ? 2 : 3}px)`;
   const r = rng(cfg.seed);
   const count = Math.max(2, Math.round((T / 1000) * cfg.perK / Math.max(scale, 0.7)));
   for (let i = 0; i < count; i++) {
@@ -747,7 +751,9 @@ export function initSky(el: HTMLElement | null): SkyHandle {
     const st = el.style;
     st.setProperty('--sky-dusk', String(f(dusk * 1000) / 1000));
     st.setProperty('--sky-night', String(f(night * 1000) / 1000));
-    const filter = cloudFilter(dusk, night);
+    // The tint filter re-rasterises the wide cloud layers, so it moves in 1/64 steps (an
+    // invisible difference) instead of on every scroll frame.
+    const filter = cloudFilter(Math.round(dusk * 64) / 64, Math.round(night * 64) / 64);
     if (filter !== lastFilter) {
       lastFilter = filter;
       st.setProperty('--sky-cloud-filter', filter);

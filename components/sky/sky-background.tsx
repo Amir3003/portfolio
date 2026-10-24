@@ -94,9 +94,23 @@ export function SkyBackground({ fixedTime }: { fixedTime?: number } = {}) {
       schedule()
     }
 
+    // iOS Safari fires `resize` whenever the toolbar shows or hides during a scroll. Only a
+    // real resize (width, or a large height change such as rotation) re-measures the keys,
+    // otherwise the time of day would jump mid-swipe. Content changes come via the observer.
+    let lastW = window.innerWidth
+    let lastH = window.innerHeight
+    const onResize = () => {
+      const w = window.innerWidth
+      const h = window.innerHeight
+      if (w === lastW && Math.abs(h - lastH) < lastH * 0.2) return
+      lastW = w
+      lastH = h
+      remeasure()
+    }
+
     const unsubscribe = subscribeScroll(schedule)
     window.addEventListener('scroll', schedule, { passive: true })
-    window.addEventListener('resize', remeasure, { passive: true })
+    window.addEventListener('resize', onResize, { passive: true })
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(remeasure)
     ro?.observe(document.body)
     schedule()
@@ -104,7 +118,7 @@ export function SkyBackground({ fixedTime }: { fixedTime?: number } = {}) {
     return () => {
       unsubscribe()
       window.removeEventListener('scroll', schedule)
-      window.removeEventListener('resize', remeasure)
+      window.removeEventListener('resize', onResize)
       ro?.disconnect()
       cancelAnimationFrame(raf)
       sky.destroy()

@@ -237,14 +237,31 @@ function attachTicket(root: HTMLElement): () => void {
     tk.style.setProperty('--lp', lp.toFixed(4))
     root.classList.toggle('tk-torn', q > 0.01)
   }
-  const onScroll = () => {
-    const vh = Math.max(1, window.innerHeight)
+  // One read and one write per frame however many scroll events arrive (Lenis and native both
+  // fire, iOS fires many during momentum). The tear length is one viewport, but the height is
+  // only refreshed on a real resize: the iOS toolbar showing or hiding must not jump the tear.
+  let vh = Math.max(1, window.innerHeight)
+  let vw = window.innerWidth
+  let scrollRaf = 0
+  const readScroll = () => {
+    scrollRaf = 0
     const y = scroller ? -scroller.getBoundingClientRect().top : window.scrollY
     setProgress(y / vh)
   }
+  const onScroll = () => {
+    if (!scrollRaf) scrollRaf = requestAnimationFrame(readScroll)
+  }
+  const onResize = () => {
+    const h = Math.max(1, window.innerHeight)
+    if (window.innerWidth === vw && Math.abs(h - vh) < vh * 0.2) return
+    vw = window.innerWidth
+    vh = h
+    onScroll()
+  }
   const unsubscribe = subscribeScroll(onScroll)
   window.addEventListener('scroll', onScroll, { passive: true })
-  onScroll()
+  window.addEventListener('resize', onResize, { passive: true })
+  readScroll()
 
   const onRm = (e: MediaQueryListEvent) => {
     reduced = e.matches
@@ -266,6 +283,8 @@ function attachTicket(root: HTMLElement): () => void {
     window.removeEventListener('pointermove', onMove)
     document.documentElement.removeEventListener('pointerleave', onLeave)
     window.removeEventListener('scroll', onScroll)
+    window.removeEventListener('resize', onResize)
+    cancelAnimationFrame(scrollRaf)
     unsubscribe()
     rmq.removeEventListener('change', onRm)
     root.classList.remove('tk-reduced', 'tk-torn')

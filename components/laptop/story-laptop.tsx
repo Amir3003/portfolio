@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { motion, useTransform } from 'framer-motion'
+import { motion, useMotionValueEvent, useTransform } from 'framer-motion'
 import type { ScreenRect } from '@/components/laptop/laptop-scene'
 import { QadamShowcase } from '@/components/laptop/qadam-showcase'
 import {
@@ -162,7 +162,7 @@ function FullscreenToggle({
         type="button"
         onClick={onClose}
         aria-label={`Close ${label}`}
-        className="fixed left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/90 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg transition-transform duration-150 ease-out active:scale-[0.97]"
+        className="fixed left-1/2 z-50 flex md:min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/90 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg transition-transform duration-150 ease-out active:scale-[0.97]"
         style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))' }}
       >
         <span aria-hidden="true">✕</span> Close
@@ -173,7 +173,7 @@ function FullscreenToggle({
     <button
       type="button"
       onClick={onOpen}
-      className="absolute bottom-4 left-1/2 z-50 hidden -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/85 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg transition-transform duration-150 ease-out active:scale-[0.97] pointer-coarse:flex"
+      className="absolute bottom-4 left-1/2 z-50 hidden md:min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/85 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg transition-transform duration-150 ease-out active:scale-[0.97] pointer-coarse:flex"
     >
       Open {label} full screen
       <span aria-hidden="true">↗</span>
@@ -270,7 +270,7 @@ export function StoryLaptop() {
   }, [useFallback])
 
   // Section scroll progress, 0 to 1.
-  const progress = useLaptopProgress(containerRef, !reducedMotion)
+  const progress = useLaptopProgress(containerRef, !reducedMotion, viewportRef)
 
   // Hybrid transition: a native DOM dashboard starts exactly on the projected laptop display
   // and expands to a full-width, fully interactive panel. Everything is written straight to
@@ -284,6 +284,9 @@ export function StoryLaptop() {
     if (panels.length === 0) return
 
     let raf = 0
+    // Inputs of the last written frame: style writes are skipped while nothing moved, so an
+    // idle pinned stage costs one comparison per frame (matters on iPad GPUs and batteries).
+    let lastKey = ''
 
     const hide = (panel: (typeof panels)[number]) => {
       if (!panel.visible) return
@@ -302,6 +305,9 @@ export function StoryLaptop() {
       const p = progress.get()
       const vw = viewport.clientWidth
       const vh = viewport.clientHeight
+      const key = `${p}|${vw}|${vh}|${rect.x}|${rect.y}|${rect.w}|${rect.h}|${fullscreenRef.current}`
+      if (key === lastKey) return
+      lastKey = key
 
       // Final (expanded) box, shared by both panels.
       const { gutter, topClear, bottomBand } = panelGeometry(vw)
@@ -407,6 +413,11 @@ export function StoryLaptop() {
     ],
     [1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0],
   )
+  // Stop rendering WebGL while the scene is fully faded out behind an expanded panel: the
+  // reader may sit there for a while and a hidden 60 fps canvas drains tablets for nothing.
+  // Only threshold crossings set state, so this is not a per-frame render.
+  const [sceneVisible, setSceneVisible] = useState(true)
+  useMotionValueEvent(sceneOpacity, 'change', (v) => setSceneVisible(v > 0.001))
 
   // Static fallback for reduced motion or missing WebGL.
   if (useFallback) {
@@ -454,7 +465,7 @@ export function StoryLaptop() {
       {/* Sticky creates a stacking context: lift it above the site header while a panel is full screen. */}
       <div
         ref={viewportRef}
-        className={`sticky top-0 h-screen w-full overflow-hidden ${fullscreen ? 'z-[70]' : ''}`}
+        className={`sticky top-0 h-screen w-full md:pointer-coarse:h-svh overflow-hidden ${fullscreen ? 'z-[70]' : ''}`}
       >
         {/* Layer 10: WebGL laptop. Never receives pointer events. */}
         {mounted && (
@@ -464,7 +475,7 @@ export function StoryLaptop() {
           >
             <LaptopScene
               progress={progress}
-              active={inView}
+              active={inView && sceneVisible}
               onContextLost={handleContextLost}
               bottomInsetRef={bottomInsetRef}
               screenRectRef={screenRectRef}

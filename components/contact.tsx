@@ -18,12 +18,14 @@ export function Contact() {
       style={ticketText}
     >
       <div className="mx-auto max-w-6xl">
-        <SectionHeading
-          id="contact-title"
-          eyebrow="Final leg · Baggage claim"
-          title="Get in touch."
-          description="Write to me directly, or reach QADAM through its work accounts. Freelance projects through Freelance.kz and Freelancer."
-        />
+        <div className="sky-copy">
+          <SectionHeading
+            id="contact-title"
+            eyebrow="Final leg · Baggage claim"
+            title="Get in touch."
+            description="Write to me directly, or reach QADAM through its work accounts. Freelance projects through Freelance.kz and Freelancer."
+          />
+        </div>
         <div className="grid grid-cols-1 items-start gap-8 md:grid-cols-2">
           {contactGroups.map((group, gi) => {
             const tag = TAGS[gi % TAGS.length]

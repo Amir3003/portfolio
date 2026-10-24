@@ -33,6 +33,8 @@ export function LenisProvider({ children }: { children: React.ReactNode }) {
         duration: 1.2,
         easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
+        // Touch screens (phones, iPad) always scroll natively: Lenis never hijacks a finger.
+        syncTouch: false,
         anchors: true,
       })
       lenis.on('scroll', emitScroll)

@@ -3,6 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { SectionHeading, TICKET, giantWord, ticketText } from '@/components/section-heading'
 import { PROJECTS } from '@/lib/seo'
+import './sections.css'
 
 /** Itinerary order follows the 3D story: Voyage AI first, then QADAM. */
 const ITINERARY: ReadonlyArray<{ slug: string; word: string; size: string; line: string }> = [
@@ -35,7 +36,7 @@ export function ProjectsSection() {
       className="relative scroll-mt-24 overflow-x-clip px-4 pt-28 sm:px-8"
       style={ticketText}
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="sky-copy mx-auto max-w-6xl">
         <SectionHeading
           id="projects-title"
           eyebrow="Itinerary · 2 stops"
@@ -73,7 +74,7 @@ export function ProjectsSection() {
                   className={`mx-auto mt-8 grid w-full max-w-6xl grid-cols-1 items-center gap-8 md:mt-12 md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:gap-12 ${flip ? 'md:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]' : ''}`}
                 >
                   <div className={`flex flex-col gap-6 ${flip ? 'md:order-2 md:items-end md:text-right' : ''}`}>
-                    <p className="max-w-[34ch] text-pretty text-xl leading-snug text-[#F6F4EE]/85">{line}</p>
+                    <p className="sky-copy max-w-[34ch] text-pretty text-xl leading-snug text-[#F6F4EE]/85">{line}</p>
                     <Link
                       href={p.path}
                       className={`group inline-flex min-h-11 items-center gap-3 self-start rounded-full bg-[#F6F4EE] py-2.5 pr-4 pl-5 text-[15px] font-semibold text-[#0C2633] transition-[background-color,transform] duration-150 ease-out hover:bg-white active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FEC50C] motion-reduce:transition-none motion-reduce:active:scale-100 ${flip ? 'md:self-end' : ''}`}

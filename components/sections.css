@@ -46,3 +46,13 @@
   box-shadow: 0 40px 80px -40px rgba(2, 10, 20, 0.7);
 }
 
+
+/* Tablets: light copy straight on the sky gets a soft ink halo where it crosses the towers. */
+@media (pointer: coarse) and (min-width: 768px) {
+  .sky-copy p,
+  p.sky-copy {
+    text-shadow:
+      0 1px 2px rgb(6 20 40 / 0.55),
+      0 0 18px rgb(6 20 40 / 0.45);
+  }
+}

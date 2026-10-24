@@ -659,6 +659,16 @@ function ContextGuard({ onLost }: { onLost: () => void }) {
 /** Device pixel ratio range; a slow GPU drops to the lower range, never below 1. */
 const DPR_HIGH: [number, number] = [1, 2]
 const DPR_LOW: [number, number] = [1, 1.5]
+/** Tablets (iPad: 2x panels at 1180+ px wide) get a lower ceiling. */
+const DPR_TOUCH_HIGH: [number, number] = [1, 1.5]
+const DPR_TOUCH_LOW: [number, number] = [1, 1.25]
+
+function isTouchScreen(): boolean {
+  if (typeof window === 'undefined') return false
+  // iPadOS reports itself as a Mac: maxTouchPoints is the reliable signal there. Phones keep the default.
+  const touch = window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 1
+  return touch && Math.min(window.screen.width, window.screen.height) >= 700
+}
 
 /**
  * The procedural textures draw text with the site fonts, so wait for them (with a short
@@ -690,7 +700,10 @@ export default function LaptopScene({
   bottomInsetRef,
   screenRectRef,
 }: LaptopSceneProps) {
-  const [dpr, setDpr] = useState<[number, number]>(DPR_HIGH)
+  const [touch] = useState(isTouchScreen)
+  const high = touch ? DPR_TOUCH_HIGH : DPR_HIGH
+  const low = touch ? DPR_TOUCH_LOW : DPR_LOW
+  const [dpr, setDpr] = useState<[number, number]>(high)
   const fontsReady = useFontsReady()
 
   return (
@@ -702,7 +715,7 @@ export default function LaptopScene({
       gl={{ antialias: true, alpha: true, powerPreference: 'high-performance', stencil: false }}
       className="pointer-events-none"
     >
-      <PerformanceMonitor onDecline={() => setDpr(DPR_LOW)} onIncline={() => setDpr(DPR_HIGH)} />
+      <PerformanceMonitor onDecline={() => setDpr(low)} onIncline={() => setDpr(high)} />
       <ContextGuard onLost={onContextLost} />
       <ambientLight intensity={0.9} />
       <directionalLight position={[4, 5, 5]} intensity={1.8} color="#ffffff" />

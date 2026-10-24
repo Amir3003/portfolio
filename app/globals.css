@@ -274,6 +274,9 @@
   top: 0;
   height: 100vh;
   height: 100svh;
+  /* The torn stub drifts right as it falls; clip sideways so touch browsers never widen the
+     layout viewport (clip, unlike hidden, keeps this element out of scroll-container duty). */
+  overflow-x: clip;
   display: grid;
   place-content: center;
   justify-items: center;
@@ -356,5 +359,13 @@
     height: auto;
     min-height: 100svh;
     padding-bottom: 48px;
+  }
+}
+
+/* Tablets (iPad): the panes carry `overscroll-contain`; on a pane that cannot scroll it would
+   swallow the swipe instead of chaining it to the page (the page froze over the panel). */
+@media (pointer: coarse) and (min-width: 768px) {
+  .story-panel[data-fullscreen='false'] [data-lenis-prevent] {
+    overscroll-behavior: auto;
   }
 }
