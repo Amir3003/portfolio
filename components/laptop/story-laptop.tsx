@@ -384,13 +384,31 @@ export function StoryLaptop() {
   // Initial scroll cue.
   const scrollCueOpacity = useTransform(progress, [0, 0.046, 0.077], [1, 0.6, 0])
 
+  // Phones: the cards sit right over the laptop, so a half-faded card reads as a glitch when the
+  // reader stops mid-fade. There each card is either fully shown or hidden, with a short CSS fade.
+  const [snapCards, setSnapCards] = useState(false)
+  const snapRef = useRef(false)
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 767px)')
+    const apply = () => {
+      snapRef.current = mql.matches
+      setSnapCards(mql.matches)
+    }
+    apply()
+    mql.addEventListener('change', apply)
+    return () => mql.removeEventListener('change', apply)
+  }, [])
+  const snap = (v: number) => (snapRef.current ? (v > 0.5 ? 1 : 0) : v)
+
   // Stage 1: outer lid and profile.
-  const stage1Opacity = useTransform(progress, [0.077, 0.123, 0.2, 0.23], [0, 1, 1, 0])
+  const stage1Fade = useTransform(progress, [0.077, 0.123, 0.2, 0.23], [0, 1, 1, 0])
+  const stage1Opacity = useTransform(stage1Fade, snap)
   const stage1Y = useTransform(progress, [0.077, 0.123, 0.2, 0.23], [20, 0, 0, -20])
   const stage1Events = useTransform(stage1Opacity, eventsFor)
 
   // Stage 2 and 3: bottom chassis and architecture.
-  const stage2Opacity = useTransform(progress, [0.245, 0.29, 0.368, 0.4], [0, 1, 1, 0])
+  const stage2Fade = useTransform(progress, [0.245, 0.29, 0.368, 0.4], [0, 1, 1, 0])
+  const stage2Opacity = useTransform(stage2Fade, snap)
   const stage2Y = useTransform(progress, [0.245, 0.29, 0.368, 0.4], [20, 0, 0, -20])
   const stage2Events = useTransform(stage2Opacity, eventsFor)
 
@@ -503,7 +521,7 @@ export function StoryLaptop() {
           {/* Stage 1: outer lid and profile */}
           <motion.div
             style={{ opacity: stage1Opacity, y: stage1Y, pointerEvents: stage1Events }}
-            className={`${PAPER_CARD} absolute inset-x-4 top-[11vh] mx-auto flex max-w-2xl flex-col items-center gap-2.5 px-5 py-5 text-center sm:top-[15vh] sm:gap-3 sm:px-8 sm:py-7`}
+            className={`${PAPER_CARD} ${snapCards ? 'transition-opacity duration-300 motion-reduce:transition-none' : ''} absolute inset-x-4 top-[11vh] mx-auto flex max-w-2xl flex-col items-center gap-2.5 px-5 py-5 text-center sm:top-[15vh] sm:gap-3 sm:px-8 sm:py-7`}
           >
             <p className={PAPER_LABEL}>Profile</p>
             <h2 className="font-display text-xl font-extrabold leading-tight tracking-tight text-[#0C2633] sm:text-3xl">
@@ -521,7 +539,7 @@ export function StoryLaptop() {
           {/* Stage 2 and 3: bottom chassis and architecture */}
           <motion.div
             style={{ opacity: stage2Opacity, y: stage2Y, pointerEvents: stage2Events }}
-            className="absolute inset-x-4 top-[11vh] mx-auto flex max-w-6xl flex-col items-center gap-3 sm:top-[19vh] sm:gap-4"
+            className={`${snapCards ? 'transition-opacity duration-300 motion-reduce:transition-none' : ''} absolute inset-x-4 top-[11vh] mx-auto flex max-w-6xl flex-col items-center gap-3 sm:top-[19vh] sm:gap-4`}
           >
             <h2 className="text-balance rounded-full bg-[#0C2633] px-5 py-2 text-center font-display text-base font-extrabold tracking-tight text-[#F6F4EE] shadow-[0_10px_24px_-10px_rgba(6,30,42,0.5)] sm:text-2xl">
               Physical rigor, system architecture

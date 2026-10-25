@@ -5,8 +5,8 @@ import './sections.css'
 
 /** Each contact group is a baggage tag: paper for personal, sun gold for QADAM work. */
 const TAGS = [
-  { code: 'AN', note: 'Personal', face: TICKET.paper, foot: '#E9E6DC' },
-  { code: 'QDM', note: 'QADAM', face: TICKET.sun, foot: '#EDB60A' },
+  { code: 'AN', note: 'Personal', face: TICKET.paper, foot: '#E9E6DC', logo: '/icon.svg', logoBg: '#0C2633' },
+  { code: 'QDM', note: 'QADAM', face: TICKET.sun, foot: '#EDB60A', logo: '/qadam/qadam-icon.png', logoBg: '#FFFFFF' },
 ] as const
 
 export function Contact() {
@@ -47,11 +47,14 @@ export function Contact() {
                       {group.title}
                     </h3>
                   </div>
+                  {/* The eyelet carries the owner's mark: Amir's AN, or the QADAM logo. */}
                   <span
                     aria-hidden="true"
-                    className="mt-1 grid size-11 shrink-0 place-items-center rounded-full border-2 border-[#0C2633]/25 bg-[#0C2633]/[0.06]"
+                    className="mt-1 grid size-12 shrink-0 place-items-center overflow-hidden rounded-full ring-2 ring-[#0C2633]/20 shadow-[0_4px_10px_-4px_rgba(6,30,42,0.45)]"
+                    style={{ background: tag.logoBg }}
                   >
-                    <span className="size-4 rounded-full bg-[#0C2633]/80" />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={tag.logo} alt="" width={48} height={48} className={tag.code === 'AN' ? 'size-full scale-[1.18] object-cover' : 'size-9 object-contain'} />
                   </span>
                 </div>
 
