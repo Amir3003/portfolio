@@ -140,8 +140,9 @@ export function profilePageJsonLd() {
     '@id': `${SITE_URL}/#profile`,
     url: `${SITE_URL}/`,
     name: SITE_TITLE,
-    dateCreated: '2026-10-11',
-    dateModified: LAST_UPDATED,
+    // ProfilePage wants full ISO 8601 with a time zone (Astana, UTC+5), not a bare date.
+    dateCreated: '2026-10-11T00:00:00+05:00',
+    dateModified: `${LAST_UPDATED}T00:00:00+05:00`,
     mainEntity: personJsonLd(),
   }
 }
