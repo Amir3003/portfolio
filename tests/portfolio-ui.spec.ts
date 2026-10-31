@@ -27,6 +27,22 @@ async function scrollThrough(page: Page) {
   })
 }
 
+// A returning visitor has already answered the consent banner, so it does not sit over the page.
+test.beforeEach(async ({ page }, info) => {
+  if (info.title === 'consent banner') return
+  await page.addInitScript(() => localStorage.setItem('consent.analytics.v1', 'denied'))
+})
+
+test('consent banner', async ({ page }) => {
+  await page.goto('/', { waitUntil: 'networkidle' })
+  const banner = page.getByRole('region', { name: 'Analytics consent' })
+  await expect(banner).toBeVisible()
+  await page.getByRole('button', { name: 'Accept analytics' }).click({ trial: true })
+  await page.getByRole('button', { name: 'Decline' }).click()
+  await expect(banner).toHaveCount(0)
+  expect(await page.evaluate(() => localStorage.getItem('consent.analytics.v1'))).toBe('denied')
+})
+
 for (const route of ROUTES) {
   test(`layout ${route}`, async ({ page }, info) => {
     const problems = watch(page)
