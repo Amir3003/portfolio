@@ -2,7 +2,7 @@
 
 import { Analytics } from '@vercel/analytics/next'
 import Link from 'next/link'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   getConsentServerSnapshot,
   getConsentSnapshot,
@@ -25,37 +25,53 @@ export function AnalyticsGate() {
 /** Equal-weight Accept and Decline. Dismissing without a choice keeps analytics off. */
 export function ConsentBanner() {
   const consent = useConsent()
+  const ref = useRef<HTMLElement>(null)
+  const [height, setHeight] = useState(0)
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(() => setHeight(el.offsetHeight))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [consent])
+
   if (consent !== 'unset') return null
 
   return (
-    <section
-      aria-label="Analytics consent"
-      className="fixed inset-x-3 bottom-3 z-[60] max-w-md border border-neutral-700 bg-neutral-950 p-4 sm:left-4 sm:right-auto"
-    >
-      <p className="text-sm leading-relaxed text-neutral-300">
-        This site sets no cookies. With your permission it uses privacy-focused analytics to count visits. Nothing is
-        used for advertising.{' '}
-        <Link href="/privacy" className="text-neutral-100 underline underline-offset-4">
-          Privacy Policy
-        </Link>
-      </p>
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
-          onClick={() => setConsent('denied')}
-          className="flex-1 border border-neutral-600 px-3 py-2 text-sm text-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400"
-        >
-          Decline
-        </button>
-        <button
-          type="button"
-          onClick={() => setConsent('granted')}
-          className="flex-1 border border-neutral-600 px-3 py-2 text-sm text-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400"
-        >
-          Accept analytics
-        </button>
-      </div>
-    </section>
+    <>
+      {/* Reserve room under the footer so the fixed banner never covers its last line and links. */}
+      <div aria-hidden="true" style={{ height: height + 24 }} />
+      <section
+        ref={ref}
+        aria-label="Analytics consent"
+        className="fixed inset-x-3 bottom-3 z-[60] max-w-md border border-neutral-700 bg-neutral-950 p-4 sm:left-4 sm:right-auto"
+      >
+        <p className="text-sm leading-relaxed text-neutral-300">
+          This site sets no cookies. With your permission it uses privacy-focused analytics to count visits. Nothing is
+          used for advertising.{' '}
+          <Link href="/privacy" className="text-neutral-100 underline underline-offset-4">
+            Privacy Policy
+          </Link>
+        </p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={() => setConsent('denied')}
+            className="flex-1 border border-neutral-600 px-3 py-2 text-sm text-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400"
+          >
+            Decline
+          </button>
+          <button
+            type="button"
+            onClick={() => setConsent('granted')}
+            className="flex-1 border border-neutral-600 px-3 py-2 text-sm text-neutral-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-400"
+          >
+            Accept analytics
+          </button>
+        </div>
+      </section>
+    </>
   )
 }
 
