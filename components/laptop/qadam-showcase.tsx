@@ -7,7 +7,6 @@ import {
   DiscordIcon,
   DockerIcon,
   InstagramIcon,
-  KakaoTalkIcon,
   LinuxIcon,
   LlmIcon,
   PyTorchIcon,
@@ -35,18 +34,18 @@ const GRADIENT_BUTTON =
 const PILLARS: ReadonlyArray<{ title: string; body: string; points: readonly string[] }> = [
   {
     title: 'Verified Eligibility & Matching',
-    body: 'Real-time indexing of global hackathons, research grants, and internships matched against your stack and actual academic eligibility requirements.',
-    points: ['Zero scrapers: verified sponsors & funding', 'Automated academic deadline calculation'],
+    body: 'A daily scan and a hand-checked catalog of grants, hackathons, scholarships and internships. A listing goes live only with a deadline quoted from the organizer\'s own page.',
+    points: ['Deadline and source quoted on every listing', 'Destinations from your profile shown first'],
   },
   {
     title: 'CV Gap Analysis & Team Network',
-    body: 'Precision resume benchmarking against target roles, interactive skill verification, and peer discovery for hackathon squads.',
-    points: ['ATS linear density compatibility checks', 'Interactive 5-question Skill Lab tests'],
+    body: 'Resume benchmarking against target roles, skill verification through quizzes, and peer discovery for hackathon squads.',
+    points: ['ATS keyword density and CV health score', '235 skill quizzes: 10 questions, pass at 7'],
   },
   {
     title: 'Instant Messenger Alerts',
-    body: 'Direct real-time notifications delivered via Telegram, KakaoTalk, and Discord with server-side privacy filtering.',
-    points: ['Direct phone notifications for upcoming deadlines', 'Zero PII leakage during webhook transmission'],
+    body: 'Telegram and Discord bots: a daily note about new listings and reminders for the ones you track.',
+    points: ['Reminders 7, 3 and 1 day before a deadline', 'Opt in, and /unsubscribe deletes your data'],
   },
 ]
 
@@ -116,14 +115,14 @@ function StageContent({ stage }: { stage: Stage }) {
       <div className="space-y-4">
         <div className="space-y-1">
           <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
-            Real-Time Academic Indexing
+            Deadlines Quoted From The Source
           </div>
           <h3 className="font-mono text-2xl font-bold tracking-tight text-indigo-950 sm:text-4xl">01 / ELIGIBILITY RADAR</h3>
         </div>
         <div className="space-y-2.5">
-          <MatchRow tone="emerald" title="Nebius x NVIDIA Global AI Hackathon" meta="GPU Compute & Multimodal Agents Track · Virtual" match="94% MATCH" />
-          <MatchRow tone="sky" title="MEXT Scholarship: Graduate Research in AI" meta="Full Government Sponsorship · Ministry of Education Japan" match="88% MATCH" />
-          <MatchRow tone="amber" title="Physical AI & Robotics Travel Grant" meta="NeurIPS 2026 Conference Travel · Verified Academic Track" match="91% MATCH" />
+          <MatchRow tone="emerald" title="Major League Hacking 2027 season" meta="Student hackathons · United States and Canada" match="HACKATHON" />
+          <MatchRow tone="sky" title="Japanese Government (MEXT) Scholarship" meta="MEXT, Government of Japan · Japan" match="GRANT" />
+          <MatchRow tone="amber" title="Google Summer of Code" meta="Google Open Source · Online" match="INTERNSHIP" />
         </div>
       </div>
     )
@@ -165,7 +164,7 @@ function StageContent({ stage }: { stage: Stage }) {
     <div className="space-y-4">
       <div className="space-y-1">
         <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-sky-700">
-          Multi-Channel Push Notification Bot
+          Telegram and Discord Bots
         </div>
         <h3 className="font-mono text-2xl font-bold tracking-tight text-indigo-950 sm:text-4xl">03 / INSTANT MESSENGER BOTS</h3>
       </div>
@@ -174,22 +173,22 @@ function StageContent({ stage }: { stage: Stage }) {
           icon={<TelegramIcon size={26} />}
           tone="border-sky-300/60 from-sky-50 to-cyan-100/80 text-sky-950"
           from="@QadamAgentBot"
-          time="Just now"
-          text="High-compatibility Hackathon detected (94% fit). Registration closes in 3 days. Proposal drafted in /workspace/qadam."
+          time="09:00 Astana"
+          text="New on the radar today. Tap Track under a listing to get a reminder 7, 3 and 1 day before its deadline."
+        />
+        <Alert
+          icon={<TelegramIcon size={26} />}
+          tone="border-sky-300/60 from-sky-50 to-cyan-100/80 text-sky-950"
+          from="@QadamAgentBot"
+          time="Reminder"
+          text="A listing you track closes in 3 days. /tracking shows your list."
         />
         <Alert
           icon={<DiscordIcon size={26} />}
           tone="border-indigo-300/60 from-indigo-50 to-violet-100/80 text-indigo-950"
-          from="Discord Webhook · Squad Channel"
-          time="2m ago"
-          text="New Travel Grant open for CVPR candidates with verified PyTorch credentials."
-        />
-        <Alert
-          icon={<KakaoTalkIcon size={26} />}
-          tone="border-amber-300/60 from-amber-50 to-yellow-100/80 text-amber-950"
-          from="KakaoTalk Channel · QADAM"
-          time="12m ago"
-          text="Tokyo Institute of Tech Exchange deadline synchronized with your local calendar."
+          from="Discord · QADAM server"
+          time="!radar"
+          text="The latest listings from the published radar feed, with the quoted deadline."
         />
       </div>
     </div>
@@ -284,10 +283,12 @@ function PillarShowcase() {
 type Kind = 'all' | 'hackathon' | 'grant' | 'internship'
 
 const FEED: ReadonlyArray<{ kind: Exclude<Kind, 'all'>; tone: 'emerald' | 'sky' | 'amber'; title: string; meta: string; match: string }> = [
-  { kind: 'hackathon', tone: 'emerald', title: 'Global AI Agents Hackathon', meta: 'Online · teams of 2 to 4 · Python and LLM tooling', match: '94% MATCH' },
-  { kind: 'grant', tone: 'sky', title: 'Student Research Travel Grant', meta: 'Conference travel · undergraduates eligible', match: '88% MATCH' },
-  { kind: 'internship', tone: 'amber', title: 'ML Engineering Summer Internship', meta: 'Remote · 12 weeks · gap: one deployed project', match: '81% MATCH' },
-  { kind: 'hackathon', tone: 'emerald', title: 'Open Source Climate Data Sprint', meta: 'Hybrid · Astana and online · first squad friendly', match: '76% MATCH' },
+  { kind: 'hackathon', tone: 'emerald', title: 'Major League Hacking 2027 season', meta: 'Student hackathons · United States and Canada', match: 'HACKATHON' },
+  { kind: 'hackathon', tone: 'emerald', title: 'ETHGlobal hackathons', meta: 'ETHGlobal · Online and in person', match: 'HACKATHON' },
+  { kind: 'grant', tone: 'sky', title: 'Chevening Scholarships', meta: 'UK Government · United Kingdom', match: 'GRANT' },
+  { kind: 'grant', tone: 'sky', title: 'DAAD scholarships for study and research', meta: 'DAAD · Germany', match: 'GRANT' },
+  { kind: 'internship', tone: 'amber', title: 'Google Summer of Code', meta: 'Google Open Source · Online', match: 'INTERNSHIP' },
+  { kind: 'internship', tone: 'amber', title: 'NVIDIA internships and Ignite', meta: 'NVIDIA · Multiple locations', match: 'INTERNSHIP' },
 ]
 
 const FILTERS: ReadonlyArray<{ id: Kind; label: string }> = [
@@ -311,7 +312,7 @@ function RadarDemo() {
           </h3>
         </div>
         <span className="rounded-full border border-teal-200/80 bg-white/70 px-2.5 py-1 font-mono text-[10px] text-teal-800">
-          Illustrative data
+          Real catalog entries
         </span>
       </div>
 
