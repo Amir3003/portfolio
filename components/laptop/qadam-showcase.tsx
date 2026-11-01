@@ -1,371 +1,110 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useRef } from 'react'
 import { QadamAmbient } from '@/components/qadam/qadam-ambient'
-import {
-  ChevronRightIcon,
-  DiscordIcon,
-  DockerIcon,
-  InstagramIcon,
-  LinuxIcon,
-  LlmIcon,
-  PyTorchIcon,
-  TelegramIcon,
-  TikTokIcon,
-} from '@/components/qadam/qadam-icons'
+import { ChevronRightIcon } from '@/components/qadam/qadam-icons'
 import { qadamLinks } from '@/lib/site'
 
 /*
- * QADAM, the second project in the laptop story: the welcome page of the live web app
- * (same background, fonts, colours and cards), plus a radar feed demo, the engineering story
- * and the socials. Everything scrolls inside the panel, so in-panel links scroll that pane
- * instead of the page (scrolling the page would move the story on and collapse the panel).
+ * QADAM in the laptop story: a copy of the live site's student landing (qadamhub.com/students),
+ * with the same copy, type, colours, cards and ambient background. Everything scrolls inside
+ * the panel, so the in-panel link scrolls that pane instead of the page (scrolling the page
+ * would move the story on and collapse the panel). Keep the copy in step with the live site.
  */
 
-type Stage = 0 | 1 | 2
+const SITE = qadamLinks.site
 
-/** Light card surface of the QADAM showcase. */
-const CARD =
-  'rounded-3xl border border-teal-300/40 bg-gradient-to-br from-[#EDF7F6]/95 via-[#F3F6FF]/95 to-[#E8F4F8]/95 text-slate-900 shadow-[0_20px_50px_-15px_rgba(6,182,212,0.22)]'
+/* Shared look of the live landings: light glass cards, emerald to teal actions. */
+const GLASS_CARD =
+  'rounded-2xl bg-gradient-to-br from-[#EDF7F6]/95 via-[#F3F6FF]/95 to-[#E8F4F8]/95 backdrop-blur-xl border border-teal-300/40 shadow-[0_20px_50px_-20px_rgba(6,182,212,0.25)] text-slate-900'
+const PRIMARY_BUTTON =
+  'min-h-[48px] px-7 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-semibold text-[15px] shadow-lg shadow-emerald-900/30 active:scale-[0.99] transition-all cursor-pointer inline-flex items-center justify-center gap-2.5'
+const GHOST_BUTTON =
+  'min-h-[48px] px-7 rounded-xl border border-teal-400/40 bg-slate-900/40 hover:bg-slate-800/60 text-teal-100 hover:text-white font-semibold text-[15px] backdrop-blur-md transition-all cursor-pointer inline-flex items-center justify-center gap-2.5'
+const EYEBROW = 'text-[12px] font-mono uppercase tracking-[0.16em] text-teal-300'
+const CONTAINER = 'max-w-6xl mx-auto px-4 sm:px-6'
 
-const GRADIENT_BUTTON =
-  'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-900/30 transition-all hover:from-emerald-400 hover:to-teal-500'
+const GOALS = ['MEXT Scholarship', 'University admissions abroad', 'Top GPA', 'Hackathons', 'Research internships']
 
-const PILLARS: ReadonlyArray<{ title: string; body: string; points: readonly string[] }> = [
+const FEATURES: ReadonlyArray<{ title: string; text: string }> = [
   {
-    title: 'Verified Eligibility & Matching',
-    body: 'A daily scan and a hand-checked catalog of grants, hackathons, scholarships and internships. A listing goes live only with a deadline quoted from the organizer\'s own page.',
-    points: ['Deadline and source quoted on every listing', 'Destinations from your profile shown first'],
+    title: 'Opportunity Radar',
+    text: 'Grants, internships and hackathons. Every listing has a deadline confirmed on the organizer page.',
   },
   {
-    title: 'CV Gap Analysis & Team Network',
-    body: 'Resume benchmarking against target roles, skill verification through quizzes, and peer discovery for hackathon squads.',
-    points: ['ATS keyword density and CV health score', '235 skill quizzes: 10 questions, pass at 7'],
+    title: 'CV and Skill Lab',
+    text: '235 skill quizzes and a CV gap check against each opportunity, so you know what to learn first.',
   },
   {
-    title: 'Instant Messenger Alerts',
-    body: 'Telegram and Discord bots: a daily note about new listings and reminders for the ones you track.',
-    points: ['Reminders 7, 3 and 1 day before a deadline', 'Opt in, and /unsubscribe deletes your data'],
+    title: 'Application prep',
+    text: 'A checklist before you apply on the organizer site, with the gaps in your profile called out.',
+  },
+  {
+    title: 'Alerts in Telegram and Discord',
+    text: 'New listings that match your goals, in the messenger you already use.',
+  },
+  {
+    title: 'Teammates and Network',
+    text: 'Find people for a hackathon team and message them. Joining is your choice.',
+  },
+  {
+    title: 'Private by default',
+    text: 'Your profile stays on your device. You choose whether to join the shared network.',
   },
 ]
 
-/* -------------------------------------------------------------------------- */
-/*  Stage content (from the web app's welcome page)                           */
-/* -------------------------------------------------------------------------- */
-
-function MatchRow({ tone, title, meta, match }: { tone: 'emerald' | 'sky' | 'amber'; title: string; meta: string; match: string }) {
-  const styles = {
-    emerald: ['from-emerald-50 to-teal-100/80 border-emerald-300/60', 'text-emerald-950', 'text-emerald-800', 'bg-emerald-600'],
-    sky: ['from-sky-50 to-cyan-100/80 border-sky-300/60', 'text-sky-950', 'text-sky-800', 'bg-sky-600'],
-    amber: ['from-amber-50 to-orange-100/80 border-amber-300/60', 'text-amber-950', 'text-amber-800', 'bg-amber-600'],
-  }[tone]
-  return (
-    <div className={`flex items-center justify-between gap-3 rounded-xl border bg-gradient-to-br p-3.5 shadow-xs ${styles[0]}`}>
-      <div className="min-w-0">
-        <div className={`truncate text-[13px] font-bold ${styles[1]}`}>{title}</div>
-        <div className={`mt-0.5 truncate font-mono text-[11px] leading-[14px] ${styles[2]}`}>{meta}</div>
-      </div>
-      <span className={`shrink-0 rounded-full px-2.5 py-1 font-mono text-[11px] font-bold leading-[14px] text-white ${styles[3]}`}>
-        {match}
-      </span>
-    </div>
-  )
-}
-
-function SkillTile({ icon, label, score, className }: { icon: ReactNode; label: string; score: string; className: string }) {
-  return (
-    <div className={`flex flex-col items-center rounded-xl border bg-gradient-to-br p-2.5 text-center font-mono ${className}`}>
-      {icon}
-      <div className="mt-1 text-[12px] font-bold">{label}</div>
-      <div className="text-[11px] opacity-80">Score: {score}</div>
-    </div>
-  )
-}
-
-function Alert({
-  icon,
-  tone,
-  from,
-  time,
-  text,
-}: {
-  icon: ReactNode
-  tone: string
-  from: string
-  time: string
-  text: string
-}) {
-  return (
-    <div className={`flex items-start gap-2.5 rounded-xl border bg-gradient-to-br p-3 shadow-xs ${tone}`}>
-      <div className="flex size-8 shrink-0 items-center justify-center">{icon}</div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2 font-mono text-[11px] leading-[14px]">
-          <span className="truncate font-bold">{from}</span>
-          <span className="shrink-0 opacity-75">{time}</span>
-        </div>
-        <p className="mt-0.5 text-[12px] leading-relaxed opacity-90">{text}</p>
-      </div>
-    </div>
-  )
-}
-
-function StageContent({ stage }: { stage: Stage }) {
-  if (stage === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-700">
-            Deadlines Quoted From The Source
-          </div>
-          <h3 className="font-mono text-2xl font-bold tracking-tight text-indigo-950 sm:text-4xl">01 / ELIGIBILITY RADAR</h3>
-        </div>
-        <div className="space-y-2.5">
-          <MatchRow tone="emerald" title="Major League Hacking 2027 season" meta="Student hackathons · United States and Canada" match="HACKATHON" />
-          <MatchRow tone="sky" title="Japanese Government (MEXT) Scholarship" meta="MEXT, Government of Japan · Japan" match="GRANT" />
-          <MatchRow tone="amber" title="Google Summer of Code" meta="Google Open Source · Online" match="INTERNSHIP" />
-        </div>
-      </div>
-    )
-  }
-  if (stage === 1) {
-    return (
-      <div className="space-y-4">
-        <div className="space-y-1">
-          <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-indigo-700">
-            Linear ATS Resume & Benchmark Matrix
-          </div>
-          <h3 className="font-mono text-2xl font-bold tracking-tight text-indigo-950 sm:text-4xl">02 / CV & SKILL BENCHMARK</h3>
-        </div>
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-indigo-300/60 bg-gradient-to-br from-indigo-50 to-violet-100/80 p-3.5 text-indigo-950 shadow-xs">
-          <div>
-            <div className="font-mono text-[11px] font-semibold uppercase text-indigo-700">CV Health Score</div>
-            <div className="mt-0.5 font-mono text-2xl font-bold">
-              89 <span className="text-sm text-indigo-400">/ 100</span>
-              <span className="ml-2 inline-block whitespace-nowrap rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 font-sans text-[11px] font-medium text-emerald-700">
-                Top Quartile
-              </span>
-            </div>
-          </div>
-          <div className="text-right font-mono text-[11px]">
-            <div className="text-indigo-700">Benchmark Fit</div>
-            <div className="mt-0.5 font-bold text-indigo-900">4 of 4 Skills Verified</div>
-          </div>
-        </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <SkillTile icon={<PyTorchIcon size={20} />} label="PyTorch" score="95%" className="border-amber-300/60 from-amber-50 to-orange-100/80 text-amber-950" />
-          <SkillTile icon={<DockerIcon size={20} />} label="Docker" score="90%" className="border-sky-300/60 from-sky-50 to-cyan-100/80 text-sky-950" />
-          <SkillTile icon={<LlmIcon size={20} className="text-indigo-700" />} label="LLMs" score="92%" className="border-indigo-300/60 from-indigo-50 to-violet-100/80 text-indigo-950" />
-          <SkillTile icon={<LinuxIcon size={20} className="text-emerald-700" />} label="Linux" score="88%" className="border-emerald-300/60 from-emerald-50 to-teal-100/80 text-emerald-950" />
-        </div>
-      </div>
-    )
-  }
-  return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <div className="font-mono text-[11px] font-semibold uppercase tracking-wider text-sky-700">
-          Telegram and Discord Bots
-        </div>
-        <h3 className="font-mono text-2xl font-bold tracking-tight text-indigo-950 sm:text-4xl">03 / INSTANT MESSENGER BOTS</h3>
-      </div>
-      <div className="space-y-2.5">
-        <Alert
-          icon={<TelegramIcon size={26} />}
-          tone="border-sky-300/60 from-sky-50 to-cyan-100/80 text-sky-950"
-          from="@QadamAgentBot"
-          time="09:00 Astana"
-          text="New on the radar today. Tap Track under a listing to get a reminder 7, 3 and 1 day before its deadline."
-        />
-        <Alert
-          icon={<TelegramIcon size={26} />}
-          tone="border-sky-300/60 from-sky-50 to-cyan-100/80 text-sky-950"
-          from="@QadamAgentBot"
-          time="Reminder"
-          text="A listing you track closes in 3 days. /tracking shows your list."
-        />
-        <Alert
-          icon={<DiscordIcon size={26} />}
-          tone="border-indigo-300/60 from-indigo-50 to-violet-100/80 text-indigo-950"
-          from="Discord · QADAM server"
-          time="!radar"
-          text="The latest listings from the published radar feed, with the quoted deadline."
-        />
-      </div>
-    </div>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Pillars showcase                                                          */
-/* -------------------------------------------------------------------------- */
-
-function PillarShowcase() {
-  const [stage, setStage] = useState<Stage>(0)
-  const [auto, setAuto] = useState(true)
-  const pillar = PILLARS[stage]
-
-  // Cycles through the pillars like the scroll-driven original, until the visitor picks one.
-  useEffect(() => {
-    if (!auto) return
-    const id = window.setInterval(() => setStage((s) => ((s + 1) % 3) as Stage), 6000)
-    return () => window.clearInterval(id)
-  }, [auto])
-
-  const pick = (s: Stage) => {
-    setAuto(false)
-    setStage(s)
-  }
-
-  return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] lg:gap-6">
-      <div className={`${CARD} flex flex-col gap-5 p-5 sm:p-8`}>
-        <div className="flex items-center justify-between border-b border-teal-200/80 pb-3">
-          <div className="flex items-center gap-2">
-            <span className="size-2.5 animate-pulse rounded-full bg-emerald-500" />
-            <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-teal-950">Interactive Showcase</span>
-          </div>
-          <div role="tablist" aria-label="QADAM pillars" className="flex items-center gap-1.5">
-            {([0, 1, 2] as const).map((s) => (
-              <button
-                key={s}
-                type="button"
-                role="tab"
-                aria-selected={stage === s}
-                onClick={() => pick(s)}
-                className={`h-7 rounded-full px-3.5 font-mono text-[11px] font-bold transition-all ${
-                  stage === s
-                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs'
-                    : 'border border-teal-200/60 bg-white/80 text-teal-800 hover:bg-white'
-                }`}
-              >
-                0{s + 1}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div key={stage} className="qadam-flip min-h-[17rem] sm:min-h-[18.5rem]">
-          <StageContent stage={stage} />
-        </div>
-
-        <div className="flex items-center gap-1.5 border-t border-teal-200/80 pt-4" aria-hidden="true">
-          {([0, 1, 2] as const).map((s) => (
-            <span
-              key={s}
-              className={`h-1.5 rounded-full transition-all duration-500 ${stage === s ? 'w-7 bg-emerald-500' : 'w-1.5 bg-teal-300'}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className={`${CARD} flex flex-col justify-center gap-4 p-5 sm:p-8`}>
-        <p className="font-mono text-[11px] uppercase tracking-wider text-teal-700">
-          Pillar 0{stage + 1} / 03
-        </p>
-        <h3 className="text-2xl font-bold leading-tight tracking-tight text-indigo-950 sm:text-3xl">{pillar.title}</h3>
-        <p className="text-[14px] leading-relaxed text-slate-700 sm:text-[15px]">{pillar.body}</p>
-        <ul className="space-y-1.5">
-          {pillar.points.map((point) => (
-            <li key={point} className="font-mono text-[12px] text-teal-800">
-              ✓ {point}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Radar feed demo                                                           */
-/* -------------------------------------------------------------------------- */
-
-type Kind = 'all' | 'hackathon' | 'grant' | 'internship'
-
-const FEED: ReadonlyArray<{ kind: Exclude<Kind, 'all'>; tone: 'emerald' | 'sky' | 'amber'; title: string; meta: string; match: string }> = [
-  { kind: 'hackathon', tone: 'emerald', title: 'Major League Hacking 2027 season', meta: 'Student hackathons · United States and Canada', match: 'HACKATHON' },
-  { kind: 'hackathon', tone: 'emerald', title: 'ETHGlobal hackathons', meta: 'ETHGlobal · Online and in person', match: 'HACKATHON' },
-  { kind: 'grant', tone: 'sky', title: 'Chevening Scholarships', meta: 'UK Government · United Kingdom', match: 'GRANT' },
-  { kind: 'grant', tone: 'sky', title: 'DAAD scholarships for study and research', meta: 'DAAD · Germany', match: 'GRANT' },
-  { kind: 'internship', tone: 'amber', title: 'Google Summer of Code', meta: 'Google Open Source · Online', match: 'INTERNSHIP' },
-  { kind: 'internship', tone: 'amber', title: 'NVIDIA internships and Ignite', meta: 'NVIDIA · Multiple locations', match: 'INTERNSHIP' },
+const STEPS: ReadonlyArray<readonly [string, string]> = [
+  ['Create a profile', 'Your name, university, skills and goals, for example a MEXT scholarship or a place at a university abroad.'],
+  ['Get matched', 'The Radar shows how well each opportunity fits your skills and what is missing.'],
+  ['Close the gaps', 'Take a quiz, fix your CV, then prepare the application.'],
 ]
 
-const FILTERS: ReadonlyArray<{ id: Kind; label: string }> = [
-  { id: 'all', label: 'All' },
-  { id: 'hackathon', label: 'Hackathons' },
-  { id: 'grant', label: 'Grants' },
-  { id: 'internship', label: 'Internships' },
+const FOOTER_LINKS: ReadonlyArray<readonly [string, string]> = [
+  ['Privacy', '/privacy'],
+  ['Terms', '/terms'],
+  ['Refunds', '/refund'],
+  ['Data request', '/privacy#data-request'],
 ]
 
-function RadarDemo() {
-  const [filter, setFilter] = useState<Kind>('all')
-  const items = FEED.filter((o) => filter === 'all' || o.kind === filter)
-
+/** The live site's student/school switch: "For Students" is the page shown here. */
+function AudienceSwitch() {
   return (
-    <section aria-labelledby="qadam-radar-title" className={`${CARD} p-5 sm:p-8`}>
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-teal-200/80 pb-3">
-        <div>
-          <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-emerald-700">Try it</p>
-          <h3 id="qadam-radar-title" className="mt-1 text-2xl font-bold tracking-tight text-indigo-950 sm:text-3xl">
-            Your radar feed
-          </h3>
-        </div>
-        <span className="rounded-full border border-teal-200/80 bg-white/70 px-2.5 py-1 font-mono text-[10px] text-teal-800">
-          Real catalog entries
-        </span>
-      </div>
-
-      <div role="group" aria-label="Filter opportunities" className="mt-4 flex flex-wrap gap-1.5">
-        {FILTERS.map((f) => (
-          <button
-            key={f.id}
-            type="button"
-            aria-pressed={f.id === filter}
-            onClick={() => setFilter(f.id)}
-            className={`h-8 rounded-full px-3.5 font-mono text-[11px] font-bold transition-all ${
-              f.id === filter
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs'
-                : 'border border-teal-200/60 bg-white/80 text-teal-800 hover:bg-white'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-4 space-y-2.5">
-        {items.map((o) => (
-          <MatchRow key={o.title} tone={o.tone} title={o.title} meta={o.meta} match={o.match} />
-        ))}
-      </div>
-    </section>
+    <nav
+      aria-label="Choose your audience"
+      className="relative inline-grid grid-cols-2 rounded-full border border-white/10 bg-[#0B101E]/80 p-0.5"
+    >
+      <span
+        aria-hidden="true"
+        className="absolute top-0.5 bottom-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-gradient-to-r from-emerald-500/25 to-teal-500/25 border border-teal-400/40"
+      />
+      <a
+        href={`${SITE}/students`}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-current="page"
+        className="relative z-10 min-h-[36px] px-3.5 sm:px-4 inline-flex items-center justify-center whitespace-nowrap rounded-full text-[13px] font-semibold text-white"
+      >
+        For Students
+      </a>
+      <a
+        href={`${SITE}/welcome`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative z-10 min-h-[36px] px-3.5 sm:px-4 inline-flex items-center justify-center whitespace-nowrap rounded-full text-[13px] font-semibold text-teal-100/70 transition-colors hover:text-white"
+      >
+        For Schools
+      </a>
+    </nav>
   )
 }
-
-/* -------------------------------------------------------------------------- */
-/*  Showcase                                                                  */
-/* -------------------------------------------------------------------------- */
-
-const STACK = [
-  'React 19',
-  'TypeScript',
-  'Vite',
-  'Tailwind CSS',
-  'Supabase Postgres + OTP auth',
-  'GitHub Actions radar',
-  'Node.js bots on Oracle Cloud',
-  'Vercel',
-] as const
 
 export function QadamShowcase() {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const pillarsRef = useRef<HTMLDivElement>(null)
+  const featuresRef = useRef<HTMLElement>(null)
 
-  // Scroll the panel's own pane: scrollIntoView would also scroll the page and close the panel.
-  const showPillars = () => {
+  const showFeatures = () => {
     const pane = scrollRef.current
-    const target = pillarsRef.current
+    const target = featuresRef.current
     if (!pane || !target) return
     const top = target.getBoundingClientRect().top - pane.getBoundingClientRect().top + pane.scrollTop - 16
     pane.scrollTo({ top, behavior: 'smooth' })
@@ -375,29 +114,38 @@ export function QadamShowcase() {
     <div className="qadam-ui relative isolate flex h-full w-full flex-col overflow-hidden rounded-2xl border border-teal-500/20 bg-[#0B101E] font-sans text-slate-100 antialiased shadow-[0_24px_80px_rgba(0,0,0,0.6)]">
       <QadamAmbient />
 
-      {/* Top bar, as on the live site */}
-      <header className="relative z-10 flex shrink-0 items-center justify-between gap-2 border-b border-teal-500/20 bg-slate-900/60 px-3 py-3 sm:px-6">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/qadam/qadam-icon.png" alt="" width={32} height={32} className="size-7 rounded-md object-contain sm:size-8" />
-          <span className="font-mono text-[17px] font-bold tracking-tight text-white sm:text-[19px]">QADAM</span>
-          <span className="hidden rounded-full border border-teal-500/30 bg-teal-500/10 px-2.5 py-0.5 font-mono text-[11px] font-medium text-teal-300 sm:inline">
-            «Қадам»
-          </span>
-          <span className="whitespace-nowrap rounded-full border border-amber-400/40 bg-amber-400/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-amber-300">
-            LIVE BETA
-          </span>
+      <header className="relative z-10 shrink-0 border-b border-teal-500/20 bg-slate-900/60 shadow-md backdrop-blur-md">
+        <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 md:px-12">
+          <a href={`${SITE}/students`} target="_blank" rel="noopener noreferrer" className="flex min-w-0 items-center gap-3" aria-label="QADAM Hub for students">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/qadam/qadam-icon.png" alt="" width={32} height={32} className="size-8 shrink-0 rounded-md object-contain" />
+            <span className="whitespace-nowrap font-mono text-[18px] font-bold tracking-tight text-white">
+              QADAM <span className="text-teal-300">Hub</span>
+            </span>
+          </a>
+          <div className="hidden md:block">
+            <AudienceSwitch />
+          </div>
+          <div className="flex items-center gap-2">
+            <a
+              href={`${SITE}/student`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden h-10 items-center rounded-lg border border-teal-500/30 px-4 text-[13px] font-semibold text-teal-100 transition-colors hover:bg-teal-500/10 hover:text-white sm:inline-flex"
+            >
+              I have an invite code
+            </a>
+            <a
+              href={`${SITE}/start`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-10 cursor-pointer items-center gap-2 whitespace-nowrap rounded-lg bg-gradient-to-r from-emerald-500 to-teal-600 px-4 text-[13px] font-semibold text-white shadow-md shadow-emerald-900/30 transition-all hover:from-emerald-400 hover:to-teal-500 sm:px-5"
+            >
+              Start free
+              <ChevronRightIcon size={13} className="hidden sm:block" />
+            </a>
+          </div>
         </div>
-        <a
-          href={qadamLinks.site}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`${GRADIENT_BUTTON} flex h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 font-mono text-[11px] font-semibold sm:h-10 sm:px-5`}
-        >
-          <span className="hidden sm:inline">Open live site</span>
-          <span className="sm:hidden">Live site</span>
-          <ChevronRightIcon size={13} />
-        </a>
       </header>
 
       <div
@@ -405,122 +153,126 @@ export function QadamShowcase() {
         data-lenis-prevent="true"
         className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain"
       >
-        {/* Hero: the welcome screen of the live site */}
-        <section className="relative flex min-h-full flex-col items-center justify-center px-4 pt-10 pb-20 text-center sm:px-6">
+        <section className="relative mx-auto flex min-h-full max-w-5xl flex-col items-center justify-center px-4 pt-12 pb-20 text-center sm:px-6">
           <div className="flex flex-col items-center space-y-6 sm:space-y-8">
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-teal-400/30 bg-teal-500/10 px-5 py-2 text-sm font-semibold text-teal-300 shadow-lg md:text-base">
-              <span className="size-2.5 animate-pulse rounded-full bg-emerald-400 shadow-sm shadow-emerald-400" />
-              <span>AI Opportunity Hub</span>
+            <div className="md:hidden">
+              <AudienceSwitch />
             </div>
-            <h2 className="text-6xl font-black leading-none tracking-tight text-white drop-shadow-[0_4px_28px_rgba(16,185,129,0.28)] sm:text-7xl md:text-8xl lg:text-[7.5rem]">
-              QADAM
+            <div className="qadam-rise inline-flex items-center gap-2.5 rounded-full border border-teal-400/30 bg-teal-500/10 px-4 py-1.5 font-mono text-[13px] tracking-wide text-teal-200 backdrop-blur-md">
+              <span className="size-2 rounded-full bg-emerald-400" />
+              <span>QADAM Hub · For students · Free during the beta</span>
+            </div>
+            <h2 className="qadam-rise max-w-4xl text-balance text-[40px] font-semibold leading-[1.05] tracking-[-0.025em] text-white [animation-delay:60ms] sm:text-6xl lg:text-[72px]">
+              Find grants, hackathons and scholarships that fit you
             </h2>
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-teal-100/90 sm:text-xl md:text-2xl">
-              QADAM («Қадам») means &quot;step&quot; in Kazakh. Your direct platform for global academic grants,
-              internships, and AI opportunities.
+            <p className="qadam-rise mx-auto max-w-2xl text-lg leading-relaxed text-teal-100/85 [animation-delay:120ms] sm:text-xl">
+              Set a goal, check your skills with quizzes and see which real opportunities you can apply to now. No school or
+              invite needed.
             </p>
-            <div className="flex w-full flex-col items-center justify-center gap-3 pt-2 sm:flex-row">
-              <a
-                href={qadamLinks.site}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`${GRADIENT_BUTTON} flex min-h-[48px] w-full items-center justify-center gap-3 rounded-xl px-8 py-3.5 font-mono text-base font-semibold shadow-xl shadow-emerald-500/25 active:scale-[0.98] sm:w-auto sm:px-10 sm:text-lg`}
-              >
-                <span>Open QADAM</span>
+            <div className="qadam-rise flex w-full flex-col justify-center gap-3 pt-2 [animation-delay:180ms] sm:w-auto sm:flex-row">
+              <a href={`${SITE}/start`} target="_blank" rel="noopener noreferrer" className={PRIMARY_BUTTON}>
+                Start free
                 <ChevronRightIcon size={18} />
               </a>
-              <button
-                type="button"
-                onClick={showPillars}
-                className="flex min-h-[48px] w-full items-center justify-center rounded-xl border border-teal-400/30 bg-teal-500/10 px-8 py-3.5 font-mono text-base font-semibold text-teal-200 transition-colors hover:border-teal-300/60 hover:bg-teal-500/15 sm:w-auto sm:text-lg"
-              >
-                How it works
+              <button type="button" onClick={showFeatures} className={GHOST_BUTTON}>
+                See what you get
               </button>
             </div>
+            <div className="qadam-rise flex flex-wrap justify-center gap-2 pt-2 [animation-delay:240ms]">
+              {GOALS.map((goal) => (
+                <span
+                  key={goal}
+                  className="rounded-full border border-teal-500/25 bg-slate-900/50 px-3 py-1.5 font-mono text-[12px] text-teal-200 backdrop-blur-md"
+                >
+                  {goal}
+                </span>
+              ))}
+            </div>
           </div>
-
-          <button
-            type="button"
-            onClick={showPillars}
-            className="absolute bottom-5 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 opacity-75 transition-opacity hover:opacity-100 md:flex"
-          >
-            <span className="font-mono text-[12px] font-medium uppercase tracking-wider text-teal-300">Explore 3 Pillars</span>
-            <span className="h-6 w-1.5 animate-bounce rounded-full bg-teal-400/70" />
-          </button>
         </section>
 
-        <div className="mx-auto flex max-w-[1440px] flex-col gap-6 px-3 pb-8 sm:gap-8 sm:px-6 lg:px-10">
-          <div ref={pillarsRef}>
-            <PillarShowcase />
-          </div>
-
-          <RadarDemo />
-
-          {/* Engineering */}
-          <section aria-labelledby="qadam-stack-title" className={`${CARD} grid gap-5 p-5 sm:p-8 md:grid-cols-5`}>
-            <div className="md:col-span-3">
-              <p className="font-mono text-[11px] font-semibold uppercase tracking-wider text-indigo-700">Under the hood</p>
-              <h3 id="qadam-stack-title" className="mt-1 text-2xl font-bold tracking-tight text-indigo-950 sm:text-3xl">
-                Built and shipped by a student team
-              </h3>
-              <p className="mt-3 text-[14px] leading-relaxed text-slate-700">
-                I founded QADAM and lead product, design and engineering: the web app, the radar pipeline that merges
-                each scan into the existing feed, the shared teammate network on Supabase and the messenger bots. The
-                brand, Discord community and launch content were made in house too.
-              </p>
-            </div>
-            <div className="md:col-span-2">
-              <p className="font-mono text-[11px] uppercase tracking-wider text-teal-700">Stack</p>
-              <ul className="mt-3 flex flex-wrap gap-1.5">
-                {STACK.map((item) => (
-                  <li key={item} className="rounded-lg border border-teal-200/80 bg-white/80 px-2.5 py-1 font-mono text-[11px] text-teal-900">
-                    {item}
-                  </li>
-                ))}
-              </ul>
+        <div className="space-y-24 pb-24 sm:space-y-32">
+          <section ref={featuresRef} className={CONTAINER}>
+            <p className={EYEBROW}>What you get</p>
+            <h3 className="mt-3 max-w-3xl text-[32px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[44px]">
+              One place for the whole application path
+            </h3>
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {FEATURES.map((feature) => (
+                <article
+                  key={feature.title}
+                  className={`${GLASS_CARD} flex flex-col gap-3 p-5 transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] hover:-translate-y-0.5 sm:p-6`}
+                >
+                  <span className="self-start rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 font-mono text-[12px] font-semibold text-emerald-800">
+                    Available now
+                  </span>
+                  <h4 className="text-[17px] font-bold text-indigo-950">{feature.title}</h4>
+                  <p className="text-[14px] leading-relaxed text-slate-700">{feature.text}</p>
+                </article>
+              ))}
             </div>
           </section>
 
-          <footer className="flex flex-col items-center gap-3 border-t border-teal-500/20 pt-6 pb-2 text-center">
-            <p className="flex items-center gap-2 font-mono text-sm font-bold text-white">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/qadam/qadam-icon.png" alt="" width={20} height={20} className="size-5 rounded" />
-              QADAM · AI Opportunity Hub
+          <section className={CONTAINER}>
+            <p className={EYEBROW}>How it works</p>
+            <ol className="mt-6 grid gap-4 md:grid-cols-3">
+              {STEPS.map(([title, text], index) => (
+                <li key={title} className="rounded-2xl border border-teal-500/25 bg-slate-900/60 p-5 backdrop-blur-md sm:p-6">
+                  <span className="font-mono text-[12px] text-teal-300">0{index + 1}</span>
+                  <h4 className="mt-2 text-[18px] font-semibold text-white">{title}</h4>
+                  <p className="mt-2 text-[14px] leading-relaxed text-teal-100/85">{text}</p>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-6 max-w-2xl font-mono text-[13px] leading-relaxed text-teal-200/80">
+              Your profile is stored on your device. Nothing is shared with other people unless you choose to join the network.
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <a
-                href={qadamLinks.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[12px] text-teal-200 transition-colors hover:border-teal-300/60 hover:text-white"
-              >
-                <InstagramIcon size={15} /> @joinqadamhub
-              </a>
-              <a
-                href={qadamLinks.tiktok}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[12px] text-teal-200 transition-colors hover:border-teal-300/60 hover:text-white"
-              >
-                <TikTokIcon size={15} /> @qadamhub
-              </a>
-              <a
-                href={qadamLinks.site}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[12px] text-teal-200 transition-colors hover:border-teal-300/60 hover:text-white"
-              >
-                Live site <ChevronRightIcon size={12} />
-              </a>
-              <a
-                href="/projects/qadam"
-                className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-3.5 py-1.5 font-mono text-[12px] text-teal-200 transition-colors hover:border-teal-300/60 hover:text-white"
-              >
-                QADAM case study <ChevronRightIcon size={12} />
-              </a>
+          </section>
+
+          <section className={CONTAINER}>
+            <div className="rounded-3xl border border-teal-500/25 bg-slate-900/60 px-6 py-12 text-center backdrop-blur-md sm:px-12 sm:py-16">
+              <h3 className="text-[32px] font-semibold leading-tight tracking-[-0.02em] text-white sm:text-[48px]">
+                Start with one goal
+              </h3>
+              <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-teal-100/85">
+                Free while we are in beta. Tell us what is not working with the Feedback button inside the app.
+              </p>
+              <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+                <a href={`${SITE}/start`} target="_blank" rel="noopener noreferrer" className={PRIMARY_BUTTON}>
+                  Start free
+                  <ChevronRightIcon size={18} />
+                </a>
+                <a href={`${SITE}/welcome`} target="_blank" rel="noopener noreferrer" className={GHOST_BUTTON}>
+                  For schools and training centers
+                </a>
+              </div>
             </div>
-          </footer>
+          </section>
         </div>
+
+        <footer className="border-t border-teal-500/20 bg-slate-950/60 px-6 pt-8 pb-10 backdrop-blur-md md:px-12">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 font-mono text-[12px] leading-4 text-teal-200/80 md:flex-row">
+            <div className="flex items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/qadam/qadam-icon.png" alt="" width={20} height={20} className="size-5 object-contain" />
+              <span className="font-bold text-white">QADAM Hub</span>
+              <span>© 2026</span>
+            </div>
+            <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-5 gap-y-1">
+              {FOOTER_LINKS.map(([label, path]) => (
+                <a
+                  key={label}
+                  href={`${SITE}${path}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-colors hover:text-white"
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
+          </div>
+        </footer>
       </div>
     </div>
   )

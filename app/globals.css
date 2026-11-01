@@ -220,19 +220,24 @@
   --font-code: var(--font-qadam-mono);
 }
 
-/* Pillar switch in the QADAM showcase, after the live site's 3D flip. */
-@keyframes qadam-flip-in {
+/* Entrance of the QADAM landing blocks, as on the live site (rise-in). */
+@keyframes qadam-rise-in {
   from {
     opacity: 0;
-    transform: perspective(1400px) translate3d(0, 24px, 0) rotateX(-12deg) scale(0.97);
+    transform: translate3d(0, 14px, 0);
   }
   to {
     opacity: 1;
-    transform: none;
+    transform: translate3d(0, 0, 0);
   }
 }
-.qadam-flip {
-  animation: qadam-flip-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+.qadam-rise {
+  animation: qadam-rise-in 560ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qadam-rise {
+    animation: none;
+  }
 }
 
 /*
