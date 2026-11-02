@@ -48,7 +48,7 @@ export const PROJECTS: readonly ProjectSeo[] = [
     imageAlt: 'QADAM welcome screen with the eligibility radar, built by Amir Nagiyev',
     externalUrl: qadamLinks.site,
     category: 'EducationalApplication',
-    updated: '2026-10-20',
+    updated: '2026-11-01',
   },
   {
     slug: 'voyage-ai',
@@ -66,7 +66,7 @@ export const PROJECTS: readonly ProjectSeo[] = [
   },
 ]
 
-export const LAST_UPDATED = '2026-10-20'
+export const LAST_UPDATED = '2026-11-01'
 
 /** Personal profiles only: the QADAM accounts belong to the organisation, not the person. */
 export const SAME_AS = socials.filter((s) => !/qadam/i.test(s.href)).map((s) => s.href)

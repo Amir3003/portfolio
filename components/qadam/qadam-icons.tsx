@@ -44,16 +44,6 @@ export const DiscordIcon: FC<IconProps> = ({ className = '', size = 20 }) => (
   </svg>
 )
 
-export const KakaoTalkIcon: FC<IconProps> = ({ className = '', size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} aria-label="KakaoTalk">
-    <rect width="24" height="24" rx="6" fill="#FEE500" />
-    <path
-      d="M12 5.5c-4.14 0-7.5 2.6-7.5 5.8 0 2.05 1.37 3.86 3.45 4.89l-.88 3.23c-.08.29.23.52.48.37l3.86-2.55c.2.02.39.03.59.03 4.14 0 7.5-2.6 7.5-5.8S16.14 5.5 12 5.5z"
-      fill="#3C1E1E"
-    />
-  </svg>
-)
-
 export const PyTorchIcon: FC<IconProps> = ({ className = '', size = 16 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} aria-label="PyTorch">
     <path d="M12.5 3a7.5 7.5 0 00-6.8 10.7l-2.2 2.2a1 1 0 001.4 1.4l2.1-2.1A7.5 7.5 0 1012.5 3zm0 13a5.5 5.5 0 115.5-5.5 5.5 5.5 0 01-5.5 5.5z" fill="#EE4C2C" />
