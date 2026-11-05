@@ -97,6 +97,11 @@ for (const route of ROUTES) {
     expect.soft(footerBlocked, 'footer covered by').toBeNull()
 
     if (route === '/') {
+      // A CSS filter on the drifting cloud layers is re-run every frame and made the end of the
+      // page stutter on phones: the tints must stay baked into bitmaps.
+      const filters = await page.evaluate(() => [...document.querySelectorAll('.sky__drift')].map((e) => getComputedStyle(e).filter))
+      expect.soft(filters.length, 'cloud layers present').toBeGreaterThan(0)
+      expect.soft(filters.filter((f) => f !== 'none'), 'cloud layers with a CSS filter').toEqual([])
       await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
       await page.waitForTimeout(400)
       await page.screenshot({ path: `/tmp/portfolio-${info.project.name}.png`, fullPage: true })

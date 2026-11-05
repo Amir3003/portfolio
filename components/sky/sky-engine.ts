@@ -505,7 +505,7 @@ function drawCloud(ctx: CanvasRenderingContext2D, puffs: Puff[], x: number, y: n
   ctx.restore();
 }
 
-function paintLayer(canvas: HTMLCanvasElement, cfg: CloudCfg, W: number, H: number): number {
+function paintLayer(canvas: HTMLCanvasElement, tints: HTMLCanvasElement[], drift: HTMLElement, cfg: CloudCfg, W: number, H: number): number {
   const scale = Math.min(1.2, Math.max(0.55, W / 1440));
   const T = Math.round(Math.max(W, 1000 * scale + 400)); // repeat period
   const cssW = T + W;
@@ -517,6 +517,8 @@ function paintLayer(canvas: HTMLCanvasElement, cfg: CloudCfg, W: number, H: numb
   canvas.height = Math.ceil(H * res);
   canvas.style.width = cssW + 'px';
   canvas.style.height = H + 'px';
+  drift.style.width = cssW + 'px';
+  drift.style.height = H + 'px';
   const ctx = canvas.getContext('2d');
   if (!ctx) return T;
   ctx.setTransform(res, 0, 0, res, 0, 0);
@@ -536,6 +538,22 @@ function paintLayer(canvas: HTMLCanvasElement, cfg: CloudCfg, W: number, H: numb
       if (cx + w < 0 || cx - w > cssW) continue;
       drawCloud(ctx, shape, cx, y, a, cfg.wisp);
     }
+  }
+  // Golden hour and night are baked once as their own bitmaps and cross-faded with opacity.
+  // A CSS filter on these wide, drifting layers is re-run on every frame, which is what made
+  // the page stutter from the projects section to the footer on phones.
+  if (blur) {
+    ctx.filter = 'none';
+    tints.forEach((t, i) => {
+      t.width = canvas.width;
+      t.height = canvas.height;
+      t.style.width = canvas.style.width;
+      t.style.height = canvas.style.height;
+      const c = t.getContext('2d');
+      if (!c) return;
+      c.filter = cloudFilter(1, i);
+      c.drawImage(canvas, 0, 0);
+    });
   }
   return T;
 }
@@ -593,14 +611,31 @@ export function initSky(el: HTMLElement | null): SkyHandle {
   make('sky__tint sky__tint--night');
   make('sky__night', `<div class="sky__stars">${starsSVG()}</div><div class="sky__moon">${MOON_SVG}</div>`);
 
-  const clouds: Record<string, { cfg: CloudCfg; canvas: HTMLCanvasElement; T: number; anim: Animation | null }> = {};
+  const clouds: Record<string, { cfg: CloudCfg; canvas: HTMLCanvasElement; tints: HTMLCanvasElement[]; drift: HTMLElement; T: number; anim: Animation | null }> = {};
+  const bakedTints = 'filter' in CanvasRenderingContext2D.prototype;
+  if (bakedTints) el.dataset.cloudTint = 'baked';
   const addClouds = (cfg: CloudCfg) => {
     const layer = make(`sky__layer sky__clouds sky__clouds--${cfg.name}`);
+    // The drift wrapper carries the one compositor animation; the day, golden hour and night
+    // bitmaps sit inside it, still, and are cross-faded by opacity.
+    const drift = document.createElement('div');
+    drift.className = 'sky__drift';
     const canvas = document.createElement('canvas');
-    layer.appendChild(canvas);
+    canvas.className = 'sky__cv sky__cv--day';
+    drift.appendChild(canvas);
+    const tints: HTMLCanvasElement[] = [];
+    if (bakedTints) {
+      for (const name of ['dusk', 'night']) {
+        const t = document.createElement('canvas');
+        t.className = `sky__cv sky__cv--${name}`;
+        drift.appendChild(t);
+        tints.push(t);
+      }
+    }
+    layer.appendChild(drift);
     layer.dataset.depth = String(cfg.depth);
     layers.push(layer);
-    clouds[cfg.name] = { cfg, canvas, T: 0, anim: null };
+    clouds[cfg.name] = { cfg, canvas, tints, drift, T: 0, anim: null };
   };
 
   addClouds(CLOUD_LAYERS[0]);
@@ -644,17 +679,17 @@ export function initSky(el: HTMLElement | null): SkyHandle {
     lastH = H;
     for (const key in clouds) {
       const c = clouds[key];
-      c.T = paintLayer(c.canvas, c.cfg, W, H);
+      c.T = paintLayer(c.canvas, c.tints, c.drift, c.cfg, W, H);
       if (c.anim) c.anim.cancel();
       c.anim = null;
       const start = -c.T * (0.2 + 0.6 * rng(c.cfg.seed)());
-      if (reduce.matches || typeof c.canvas.animate !== 'function') {
-        c.canvas.style.transform = `translate3d(${start}px,0,0)`;
+      if (reduce.matches || typeof c.drift.animate !== 'function') {
+        c.drift.style.transform = `translate3d(${start}px,0,0)`;
         continue;
       }
-      c.canvas.style.transform = '';
+      c.drift.style.transform = '';
       const duration = (c.T / c.cfg.speed) * 1000;
-      c.anim = c.canvas.animate(
+      c.anim = c.drift.animate(
         [{ transform: `translate3d(${-c.T}px,0,0)` }, { transform: 'translate3d(0,0,0)' }],
         { duration, iterations: Infinity, easing: 'linear' }
       );
@@ -751,12 +786,28 @@ export function initSky(el: HTMLElement | null): SkyHandle {
     const st = el.style;
     st.setProperty('--sky-dusk', String(f(dusk * 1000) / 1000));
     st.setProperty('--sky-night', String(f(night * 1000) / 1000));
-    // The tint filter re-rasterises the wide cloud layers, so it moves in 1/64 steps (an
-    // invisible difference) instead of on every scroll frame.
-    const filter = cloudFilter(Math.round(dusk * 64) / 64, Math.round(night * 64) / 64);
-    if (filter !== lastFilter) {
-      lastFilter = filter;
-      st.setProperty('--sky-cloud-filter', filter);
+    if (bakedTints) {
+      // Cross-fade of the baked bitmaps: day, golden hour, night (weights always sum to 1).
+      st.setProperty('--sky-cv-day', String(f((1 - dusk) * 1000) / 1000));
+      st.setProperty('--sky-cv-dusk', String(f(dusk * (1 - night) * 1000) / 1000));
+      st.setProperty('--sky-cv-night', String(f(night * 1000) / 1000));
+      // A bitmap that is fully faded out is hidden, so only the visible ones are composited.
+      const weights = [1 - dusk, dusk * (1 - night), night];
+      for (const key in clouds) {
+        const c = clouds[key];
+        [c.canvas, ...c.tints].forEach((cv, i) => {
+          const v = weights[i] > 0.004 ? '' : 'hidden';
+          if (cv.style.visibility !== v) cv.style.visibility = v;
+        });
+      }
+    } else {
+      // No canvas filter (older Safari): the tint stays a CSS filter, moved in 1/64 steps (an
+      // invisible difference) instead of on every scroll frame.
+      const filter = cloudFilter(Math.round(dusk * 64) / 64, Math.round(night * 64) / 64);
+      if (filter !== lastFilter) {
+        lastFilter = filter;
+        st.setProperty('--sky-cloud-filter', filter);
+      }
     }
     const phase = t < 0.3 ? 'day' : t < 0.72 ? 'dusk' : 'night';
     if (phase !== lastPhase) {
@@ -789,8 +840,9 @@ export function initSky(el: HTMLElement | null): SkyHandle {
       reduce.removeEventListener('change', onMotionPref);
       for (const n of added) n.remove();
       el.classList.remove('is-live', 'is-paused');
-      for (const p of ['--sky-dusk', '--sky-night', '--sky-cloud-filter']) el.style.removeProperty(p);
+      for (const p of ['--sky-dusk', '--sky-night', '--sky-cloud-filter', '--sky-cv-day', '--sky-cv-dusk', '--sky-cv-night']) el.style.removeProperty(p);
       delete el.dataset.skyLive;
+      delete el.dataset.cloudTint;
       delete el.dataset.skyPhase;
     },
   };
