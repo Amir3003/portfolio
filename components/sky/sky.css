@@ -136,14 +136,26 @@
   height: 100%;
 }
 
-.sky__clouds canvas {
+.sky__drift {
   position: absolute;
   top: 16px;
   left: 16px;
-  display: block;
   will-change: transform;
   filter: var(--sky-cloud-filter, none);
 }
+
+.sky__cv {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+}
+
+/* Baked tints: the three bitmaps are cross-faded with opacity, no filter on the drifting layer. */
+.sky[data-cloud-tint="baked"] .sky__drift { filter: none; }
+.sky[data-cloud-tint="baked"] .sky__cv--day { opacity: var(--sky-cv-day, 1); }
+.sky[data-cloud-tint="baked"] .sky__cv--dusk { opacity: var(--sky-cv-dusk, 0); }
+.sky[data-cloud-tint="baked"] .sky__cv--night { opacity: var(--sky-cv-night, 0); }
 
 .sky__clouds--far { opacity: 0.8; }
 .sky__clouds--mid { opacity: 0.9; }
