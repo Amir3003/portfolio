@@ -10,7 +10,7 @@ const link =
  */
 export function SiteHeader({ base = '' }: { base?: string }) {
   return (
-    <header className="pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-4" style={ticketText}>
+    <header className="site-header pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6 sm:pt-4" style={ticketText}>
       <nav aria-label="Primary" className="mx-auto flex max-w-6xl items-center justify-between gap-3">
         <a
           href={`${base}#top`}

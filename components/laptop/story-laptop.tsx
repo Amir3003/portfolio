@@ -53,6 +53,17 @@ function panelGeometry(vw: number) {
     : { gutter: 16, topClear: 84, bottomBand: 72 }
 }
 
+/**
+ * Phones: in the story the panel is a landscape screen, a little wider than the laptop, instead of
+ * a tall card that fills the viewport. It is laid out at a virtual width and scaled down to fit,
+ * so the whole top of the page reads at a glance; "Open full screen" gives the real, readable page.
+ */
+const PHONE_PREVIEW_WIDTH = 560
+/** Height of the phone preview as a share of its width. */
+const PHONE_PREVIEW_RATIO = 0.74
+/** Side margin of the phone preview, in CSS px. */
+const PHONE_PREVIEW_GUTTER = 6
+
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t
 
 /** Scroll progress at which an anchor sits, as a share of the section height. */
@@ -173,7 +184,7 @@ function FullscreenToggle({
     <button
       type="button"
       onClick={onOpen}
-      className="absolute bottom-4 left-1/2 z-50 hidden md:min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/85 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg transition-transform duration-150 ease-out active:scale-[0.97] pointer-coarse:flex"
+      className="absolute bottom-4 left-1/2 z-50 hidden md:min-h-11 -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-full border border-white/15 bg-neutral-950/85 px-5 py-2.5 font-mono text-xs font-medium text-white shadow-lg transition-transform duration-150 ease-out active:scale-[0.97] pointer-coarse:flex max-sm:bottom-auto max-sm:top-[calc(100%+14px/var(--ps,1))] max-sm:origin-top max-sm:scale-[calc(1/var(--ps,1))] max-sm:active:scale-[calc(0.97/var(--ps,1))]"
     >
       Open {label} full screen
       <span aria-hidden="true">↗</span>
@@ -210,6 +221,8 @@ export function StoryLaptop() {
     const root = document.documentElement
     const previous = root.style.overflow
     root.style.overflow = 'hidden'
+    // The panel owns the whole screen: the site header pills would sit on top of its own header.
+    root.dataset.panelOpen = ''
     getLenis()?.stop()
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setFullscreen(null)
@@ -217,6 +230,7 @@ export function StoryLaptop() {
     window.addEventListener('keydown', onKey)
     return () => {
       root.style.overflow = previous
+      delete root.dataset.panelOpen
       getLenis()?.start()
       window.removeEventListener('keydown', onKey)
     }
@@ -311,10 +325,16 @@ export function StoryLaptop() {
 
       // Final (expanded) box, shared by both panels.
       const { gutter, topClear, bottomBand } = panelGeometry(vw)
-      const fw = Math.min(vw - gutter * 2, PANEL_MAX_WIDTH)
-      const fh = Math.max(PANEL_MIN_HEIGHT, vh - topClear - bottomBand)
-      const fx = (vw - fw) / 2
-      const fy = topClear
+      const phone = vw < PANEL_NARROW
+      // `fw` x `fh` is the layout size of the panel; `sF` scales it to the size it ends up on screen.
+      const fw = phone ? PHONE_PREVIEW_WIDTH : Math.min(vw - gutter * 2, PANEL_MAX_WIDTH)
+      const fh = phone ? Math.round(PHONE_PREVIEW_WIDTH * PHONE_PREVIEW_RATIO) : Math.max(PANEL_MIN_HEIGHT, vh - topClear - bottomBand)
+      const sF = phone ? (vw - PHONE_PREVIEW_GUTTER * 2) / fw : 1
+      const endW = fw * sF
+      const endH = fh * sF
+      const fx = (vw - endW) / 2
+      // On phones the screen grows around the middle of the laptop display.
+      const fy = phone ? Math.max(topClear, Math.min(vh - bottomBand - endH, rect.y + rect.h / 2 - endH / 2)) : topClear
       // Uniform scale that covers the laptop display, cropped to the display rectangle.
       const s0 = Math.max(rect.w / fw, rect.h / fh)
 
@@ -328,6 +348,7 @@ export function StoryLaptop() {
           el.style.zIndex = '80'
           el.style.width = '100%'
           el.style.height = '100dvh'
+          el.style.setProperty('--ps', '1')
           el.style.transform = 'none'
           el.style.clipPath = 'none'
           el.style.visibility = 'visible'
@@ -345,19 +366,22 @@ export function StoryLaptop() {
         }
         panel.visible = true
         const e = expandAmount(panel.window, p)
-        const s = lerp(s0, 1, e)
+        const s = lerp(s0, sF, e)
         const x = lerp(rect.x, fx, e)
         const y = lerp(rect.y, fy, e)
-        const visW = lerp(rect.w, fw, e)
-        const visH = lerp(rect.h, fh, e)
+        const visW = lerp(rect.w, endW, e)
+        const visH = lerp(rect.h, endH, e)
 
         el.style.width = `${fw}px`
         el.style.height = `${fh}px`
+        el.style.setProperty('--ps', String(sF))
         el.style.visibility = 'visible'
         el.style.opacity = String(opacity)
 
         if (e >= 0.999) {
-          el.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
+          el.style.transform = phone
+            ? `translate3d(${x}px, ${y}px, 0) scale(${sF})`
+            : `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
           el.style.clipPath = 'none'
         } else {
           const clipRight = Math.max(0, fw - visW / s)
