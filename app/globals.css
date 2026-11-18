@@ -248,6 +248,9 @@
 .story-panel [data-lenis-prevent] {
   overflow-x: hidden;
 }
+html[data-panel-open] .site-header {
+  visibility: hidden;
+}
 @media (pointer: coarse) {
   .story-panel[data-fullscreen='false'] [data-lenis-prevent] {
     overflow-y: hidden;

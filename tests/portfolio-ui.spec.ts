@@ -134,3 +134,35 @@ for (const route of ROUTES) {
     expect(blocked, `blocked targets on ${route}`).toEqual([])
   })
 }
+
+// Phones: in the story the project screen is a landscape rectangle just wider than the laptop,
+// with the full screen button under it, and full screen hides the site header.
+test('phone project screens', async ({ page }, info) => {
+  test.skip(info.project.name !== 'mobile', 'phone layout only')
+  await page.addInitScript(() => localStorage.setItem('consent.analytics.v1', 'denied'))
+  await page.goto('/', { waitUntil: 'networkidle' })
+  const geo = await page.evaluate(() => {
+    const st = [...document.querySelectorAll<HTMLElement>('div')].find((d) => d.style.height.endsWith('vh') && d.children.length)!
+    const r = st.getBoundingClientRect()
+    return { top: r.top + scrollY, range: r.height - innerHeight }
+  })
+  for (const [id, p, label] of [['voyage-panel', 0.64, 'Voyage AI'], ['qadam-panel', 0.83, 'QADAM']] as const) {
+    for (const q of [0.3, 0.45, 0.55, p]) {
+      await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), Math.round(geo.top + q * geo.range))
+      await page.waitForTimeout(500)
+    }
+    const box = await page.locator(`#${id}`).boundingBox()
+    expect(box, `${label} panel visible`).not.toBeNull()
+    expect(box!.width, `${label} panel width`).toBeGreaterThan(360)
+    expect(box!.width, `${label} panel fits the screen`).toBeLessThanOrEqual(390)
+    expect(box!.height, `${label} panel is a landscape rectangle, not a tall card`).toBeLessThan(box!.width)
+    const open = page.getByRole('button', { name: new RegExp(`Open ${label}`) })
+    const pill = await open.boundingBox()
+    expect(pill!.y, 'button sits under the screen').toBeGreaterThanOrEqual(box!.y + box!.height)
+    await open.tap()
+    await expect(page.locator('html[data-panel-open]')).toHaveCount(1)
+    await expect(page.locator('.site-header')).toBeHidden()
+    await page.getByRole('button', { name: /Close/ }).tap()
+    await expect(page.locator('html[data-panel-open]')).toHaveCount(0)
+  }
+})
