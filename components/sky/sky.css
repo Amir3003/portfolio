@@ -22,7 +22,12 @@
 
 .sky {
   position: fixed;
-  inset: 0;
+  /* Pinned to the top at the large viewport height, never to the bottom edge: on phones the
+     browser toolbars slide in and out while scrolling, and a bottom-pinned box changes height
+     with them, which made the towers and skyline bob up and down behind the footer. */
+  inset: 0 0 auto 0;
+  height: 100vh;
+  height: 100lvh;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
